@@ -16,7 +16,7 @@ process GET_CLIINICAL_GUIDELINES {
 
     script:
 	"""
-        python3 $params.scripts/get_possible_diplotypes.py \
+        get_possible_diplotypes.py \
             --variant_csv $detected_variants \
             --haplotype_definitions $params.haplotype_definitions \
             --clinical_guidelines $params.clinical_guidelines \
@@ -27,7 +27,7 @@ process GET_CLIINICAL_GUIDELINES {
 
     stub:
 	"""
-        python3 $params.scripts/get_possible_diplotypes.py \
+        get_possible_diplotypes.py \
             --variant_csv $detected_variants \
             --haplotype_definitions $params.haplotype_definitions \
             --clinical_guidelines $params.clinical_guidelines \
@@ -55,7 +55,7 @@ process GET_INTERACTION_GUIDELINES {
 
     script:
 	"""
-        python3 $params.scripts/get_interaction_guidelines.py \
+        get_interaction_guidelines.py \
             --diploids $possible_diplotypes \
             --interaction_guidelines $params.interacting_guidelines \
             --output ${group}.possible_interactions.csv
@@ -63,7 +63,7 @@ process GET_INTERACTION_GUIDELINES {
 
     stub:
 	"""
-        python3 $params.scripts/get_interaction_guidelines.py \
+        get_interaction_guidelines.py \
             --diploids $possible_diplotypes \
             --interaction_guidelines $params.interacting_guidelines \
             --output ${group}.possible_interactions.csv
@@ -81,43 +81,26 @@ process GET_PGX_REPORT {
 	container = "${params.containers}/rmarkdown.sif"
 
 	input:
+        tuple val(group), file(annotated_vcf)
 		tuple val(group), file(detected_variants)
         tuple val(group), file(depth_at_missing_annotated_gdf)
         tuple val(group), file(possible_diplotypes)
         tuple val(group), file(depth_at_padded_baits)
         tuple val(group), file(possible_interactions)
+        file(target_rsids)
+        file(target_bed)
 
 	output:
 		tuple val(group), file("${group}.pgx.html"), emit: pgx_html
 
     script:
 	"""
-        wkdir="\$PWD"  # Needed since Rscript will set wd to location of file not session
-        intdir=\$(echo {output.html} | head -c -6)
-        Rscript \
-            -e ".libPaths('/lib/rlib'); library(rmdformats); rmarkdown::render('{$params.scripts/generate_sample_report.Rmd', output_file='${group}.pgx.html', output_format=c('readthedown'), intermediates_dir='$wkdir/$intdir')" \
-            --args --title='Farmakogenomisk analys av $group' --author=Ram \
-            --found_variants=$detected_variants \
-            --missed_variants=$depth_at_missing_annotated_gdf  \
-            --haplotype_definitions=$params.haplotype_definitions \
-            --clinical_guidelines=$possible_diplotypes \
-            --interaction_guidelines=$possible_interactions \
-            --data_location={params.script_location}/data \
-            --depth_file=$depth_at_padded_baits \
-            --sample=$group \
-            --seqid={wildcards.seqID} \
-            --dbsnp=dbsnp147 \
-            --ref=$params.genome_file \
-            --name=Ram \
-            --adress=Lund \
-            --mail=Ram.Nanduri@skane.se \
-            --phone=0123456789
-
-            rmdir $wkdir/$intdir
+    bash runReport.sh $detected_variants $depth_at_missing_annotated_gdf $params.haplotype_definitions $possible_diplotypes $possible_interactions $group $target_bed $params.pgx_resources $depth_at_padded_baits $target_rsids \$PWD $params.scripts/report.Rmd ${group}.pgx.html $annotated_vcf
 	"""
 
     stub:
 	"""
-    touch ${group}.pgx.html
+    bash runReport.sh $detected_variants $depth_at_missing_annotated_gdf $params.haplotype_definitions $possible_diplotypes $possible_interactions $group $target_bed $params.pgx_resources $depth_at_padded_baits $target_rsids \$PWD $params.scripts/report.Rmd ${group}.pgx.html $annotated_vcf
+
     """
 }

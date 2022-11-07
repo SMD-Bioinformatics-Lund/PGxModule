@@ -16,18 +16,20 @@ process SAMPLE_TARGET_LIST {
 
 	script:
 	"""
-        python3 $params.scripts/reform_genomic_region.py \
+        reform_genomic_region.py \
             --target_bed=$target_rsids \
             --output_file=${group}.pgx_target_interval.list \
-            --detected_variants=$detected_variants
+            --detected_variants=$detected_variants \
+			--addchr=$params.addchr
 	"""
 
 	stub:
 	"""
-        python3 $params.scripts/reform_genomic_region.py \
+        reform_genomic_region.py \
             --target_bed=$target_rsids \
             --output_file=${group}.pgx_target_interval.list \
-            --detected_variants=$detected_variants
+            --detected_variants=$detected_variants \
+			--addchr=$params.addchr
 	"""
 }
 
@@ -76,18 +78,20 @@ process GET_PADDED_BAITS {
 
 	script:
 	"""
-        python3 $params.scripts/reform_genomic_region.py \
+        reform_genomic_region.py \
             --target_bed=$target_bed \
             --output_file=padded_bait_interval.list \
-            --padding=100
+            --padding=$params.padding \
+			--addchr=$params.addchr
 	"""
 
 	stub:
 	"""
-        python3 $params.scripts/reform_genomic_region.py \
+        reform_genomic_region.py \
             --target_bed=$target_bed \
             --output_file=padded_bait_interval.list \
-            --padding=100
+            --padding=$params.padding \
+			--addchr=$params.addchr
 	"""
 }
 
@@ -138,20 +142,22 @@ process PADDED_BED_INTERVALS {
 	
 	script:
 	"""
-    python3 $params.scripts/reform_genomic_region.py \
+    reform_genomic_region.py \
         --target_bed=$target_bed \
         --output_file='padded_bait_interval.bed' \
-        --padding=100 \
-        --format='bed'
+        --padding=$params.padding \
+        --format='bed' \
+		--addchr=$params.addchr
 	"""
 
 	stub:
 	"""
-    python3 $params.scripts/reform_genomic_region.py \
+    reform_genomic_region.py \
         --target_bed=$target_bed \
         --output_file='padded_bait_interval.bed' \
-        --padding=100 \
-        --format='bed'
+        --padding=$params.padding \
+        --format='bed' \
+		--addchr=$params.addchr
 	"""
 }
 
@@ -174,17 +180,19 @@ process APPEND_ID_TO_GDF {
 
 	script:
 	"""
-        python3 $params.scripts/append_rsid_to_gdf.py \
+        append_rsid_to_gdf.py \
         	--input_gdf=$pgx_depth_at_missing_gdf \
             --target_bed=$target_rsids \
-            --output_file=${group}.pgx_depth_at_missing_annotated.gdf
+            --output_file=${group}.pgx_depth_at_missing_annotated.gdf \
+			--addchr=$params.addchr
 	"""
 
 	stub:
 	"""
-        python3 $params.scripts/append_rsid_to_gdf.py \
+        append_rsid_to_gdf.py \
         	--input_gdf=$pgx_depth_at_missing_gdf \
             --target_bed=$target_rsids \
-            --output_file=${group}.pgx_depth_at_missing_annotated.gdf
+            --output_file=${group}.pgx_depth_at_missing_annotated.gdf \
+			--addchr=$params.addchr
 	"""
 }

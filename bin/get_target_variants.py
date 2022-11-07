@@ -1,9 +1,13 @@
+#!/usr/bin/env python3
+
 import pandas as pd
 import gzip
 import re
 import os
 import argparse
 import sys
+from distutils.util import strtobool
+
 
 
 class GDF:
@@ -11,10 +15,10 @@ class GDF:
     We are assuming single sample GDF
     """
 
-    def __init__(self, filename,nochrs):
+    def __init__(self, filename,addchrs):
         self.data = pd.read_csv(filename, sep="\t")
         self.data_cols = self.data.columns.values
-        self.nochr = nochrs
+        self.addchr = addchrs
 
         pos_df = pd.DataFrame(
             self.data.Locus.apply(lambda x: x.split(":")).to_list(),
@@ -41,8 +45,11 @@ class GDF:
         idx_swap = targets.START > targets.END
         targets.loc[idx_swap, "START"] = targets.loc[idx_swap, "END"]
         targets.loc[idx_swap, "END"] = targets.loc[idx_swap, "save"]
-        if not self.nochr:
+        if self.addchr:
             targets["CHROM"] = targets.CHROM.apply(lambda x: f"chr{x}")
+        else:
+            targets["CHROM"] = targets.CHROM.apply(lambda x: f"{x}")
+
         self.data["ID"] = self.data.apply(lambda x: _annotate(x, targets), axis=1)
 
     def write_proccessed_gdf(self, filename, annotate=True):
@@ -145,13 +152,13 @@ def main():
     parser.add_argument("--target_bed", type=str, help="Bed-file containing RSIDs of interest")
     parser.add_argument("--vcf", type=str)
     parser.add_argument("--output", type=str, help="Location of output, NOTE: will overwrite")
-    parser.add_argument("--nochr", type=bool, help="add chr to the chromosomes")
+    parser.add_argument("--addchr", type=lambda x:bool(strtobool(x)), nargs='?', const=True, default=False,help="add chr to the chromosomes")
 
     args = parser.parse_args(sys.argv[1:])
     vcf_f = args.vcf
     bed_f = args.target_bed
     output_f = args.output
-    nochr = args.nochr
+    addchr = args.addchr
 
     var_collect = VariantQCCollection(bed_f, vcf_f)
     var_collect.write_detected_variant_qc(output_f)
@@ -159,4 +166,3 @@ def main():
 
 if __name__ == '__main__':
     main()
-

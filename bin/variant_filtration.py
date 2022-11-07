@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 from pysam import VariantFile
 import argparse
 import sys

@@ -15,7 +15,7 @@ process ANNOTATE_VARIANTS {
 	
 	script:
 	"""
-    python3 $params.scripts/modifyVCF.py \
+    modifyVCF.py \
         --input $vcf \
         --addrsid True \
         --output ${group}.pgx_annotated.vcf
@@ -23,7 +23,7 @@ process ANNOTATE_VARIANTS {
 
 	stub:
 	"""
-    python3 $params.scripts/modifyVCF.py \
+    modifyVCF.py \
         --input $vcf \
         --addrsid True \
         --output ${group}.pgx_annotated.vcf

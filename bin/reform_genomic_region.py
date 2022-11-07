@@ -1,10 +1,13 @@
+#!/usr/bin/env python3
+
 from ast import arg
 import pandas as pd
 import argparse
 import sys
+from distutils.util import strtobool
 
 
-def reform(target_bed, output_f, detected_variants, padding, file_format,nochr):
+def reform(target_bed, output_f, detected_variants, padding, file_format,addchr):
     targets = pd.read_csv(target_bed, sep="\t",
                           names=["CHROM", "START", "END", "ID", "GENE"],
                           dtype={"START": int, "END": int})
@@ -21,15 +24,15 @@ def reform(target_bed, output_f, detected_variants, padding, file_format,nochr):
             start -= padding
             end += padding
             if bed:
-                if nochr:
-                    f.write(f"{chrom}\t{start}\t{end}\t{id}\n")
-                else:
+                if addchr:
                     f.write(f"chr{chrom}\t{start}\t{end}\t{id}\n")
-            else:
-                if nochr:
-                    f.write(f"{chrom}:{start}-{end}\n")
                 else:
+                    f.write(f"{chrom}\t{start}\t{end}\t{id}\n")
+            else:
+                if addchr:
                     f.write(f"chr{chrom}:{start}-{end}\n")
+                else:
+                    f.write(f"{chrom}:{start}-{end}\n")
 
 
 def main():
@@ -41,7 +44,7 @@ def main():
     parser.add_argument("--detected_variants", type=str, default="")
     parser.add_argument("--padding", type=int, default=0)
     parser.add_argument("--format", type=str, default="list")
-    parser.add_argument("--nochr", type=bool, default="false")
+    parser.add_argument("--addchr", type=lambda x:bool(strtobool(x)), nargs='?', const=True, default=False,help="add chr to the chromosomes")
 
     args = parser.parse_args(sys.argv[1:])
     target_bed = args.target_bed
@@ -49,8 +52,8 @@ def main():
     detected_variants = args.detected_variants
     padding = args.padding
     file_format = args.format
-    nochr = args.nochr
-    reform(target_bed, output_file, detected_variants, padding, file_format,nochr)
+    addchr = args.addchr
+    reform(target_bed, output_file, detected_variants, padding, file_format,addchr)
 
 
 if __name__ == '__main__':

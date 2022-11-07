@@ -32,7 +32,7 @@ workflow PHARMACO_GENOMICS {
         APPEND_ID_TO_GDF ( DEPTH_OF_TARGETS.out.pgx_depth_at_missing, pgx_target_rsids )
         GET_CLIINICAL_GUIDELINES ( DETECTED_VARIANTS.out.detected_csv )
         GET_INTERACTION_GUIDELINES ( GET_CLIINICAL_GUIDELINES.out.possible_diplotypes )
-        GET_PGX_REPORT ( DETECTED_VARIANTS.out.detected_csv, APPEND_ID_TO_GDF.out.depth_at_missing_annotate_gdf, GET_CLIINICAL_GUIDELINES.out.possible_diplotypes, DEPTH_OF_BAITS.out.padded_baits_list, GET_INTERACTION_GUIDELINES.out.possible_interactions )
+        GET_PGX_REPORT ( ANNOTATE_VARIANTS.out.annotated_vcf, DETECTED_VARIANTS.out.detected_csv, APPEND_ID_TO_GDF.out.depth_at_missing_annotate_gdf, GET_CLIINICAL_GUIDELINES.out.possible_diplotypes, DEPTH_OF_BAITS.out.padded_baits_list, GET_INTERACTION_GUIDELINES.out.possible_interactions, pgx_target_rsids, pgx_targets_bed)
 
     emit:
         pgx_report = GET_PGX_REPORT.out.pgx_html

@@ -1,3 +1,5 @@
+#!/usr/bin/env Rscript
+
 library(tidyverse)
 library(reshape2)
 library(plotly)
@@ -10,7 +12,7 @@ options(warn=-1)
 # detected_var_file, (str) path to file containing all targets found
 # target_table_file, (str) path to file containing all targets within region
 # bait_table_file, (str) path to file detailing the targeted regions
-# gdf_file, (str) path to genomic deth file of target
+# gdf_file, (str) path to genomic depth file of target
 # exon_table_file, (str) path to exon table for target
 # gene, (str) Name of the gene
 # Output:
@@ -107,20 +109,20 @@ titlefont <- list(
 )
 
 fig <- plot_ly(plot_table_exon, x=~plot_range, y=min_cov, text =~Target,
-            type="scatter", mode="lines", size=0.5, name="Exoner", line=list(color=color_pallete[2])) %>%
+            type="scatter", mode="lines", size=0.5, name="Exon", line=list(color=color_pallete[2])) %>%
   add_trace(data=plot_table_intron, x=~plot_range, y=min_cov, text ="Intron",
-            type="scatter", mode="lines",size=0.4 ,name="Introner", line=list(color=color_pallete[3]), inherit=F) %>%
+            type="scatter", mode="lines",size=0.4 ,name="Intron", line=list(color=color_pallete[3]), inherit=F) %>%
   add_trace(data=plot_table, x=~plot_range, y=~Average_Depth_sample,
-            type="scatter", mode="lines", name="Läsdjup", line=list(color=color_pallete[1]), inherit=F) %>%
+            type="scatter", mode="lines", name="Read depth", line=list(color=color_pallete[1]), inherit=F) %>%
   add_trace(data=plot_table_rsids, x=~plot_range, y=min_cov-20, text=~Rsid,
             name="Variant targets", size=0.6, type="scatter", mode="markers", inherit = F,
             marker = list(color=color_pallete[4], line=list(color=color_pallete[4]))) %>%
   layout(
     title=list(
-      text=paste("Läsdjup över", gene),
+      text=paste("Read depth over", gene),
       font=list(size=30)),
     yaxis= list(
-      title="Läsdjup",
+      title="Read depth",
       titlefont=titlefont
       ),
     xaxis = list(
@@ -138,7 +140,7 @@ fig <- plot_ly(plot_table_exon, x=~plot_range, y=min_cov, text =~Target,
 
 if (nrow(plot_table_detected_variants) !=0){
   fig <- fig %>%  add_trace(data=plot_table_detected_variants, x=~plot_range, y=min_cov+20, text=~ID,
-                            name="Hittad variant", size=0.9, type="scatter", mode="markers", inherit = F,
+                            name="Variant found", size=0.9, type="scatter", mode="markers", inherit = F,
                             marker=list(color=color_pallete[5], line=list(color=color_pallete[5])))
 }
 

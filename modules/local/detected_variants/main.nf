@@ -16,17 +16,19 @@ process DETECTED_VARIANTS {
 
 	script:
 	"""
-    python3 $params.scripts/get_target_variants.py \
+    get_target_variants.py \
         --target_bed $pgx_ontarget_rsids_bed \
         --vcf $vcf \
-        --output ${group}.detected_variants.csv
+        --output ${group}.detected_variants.csv \
+		--addchr $params.addchr
 	"""
 
 	stub:
 	"""
-    python3 $params.scripts/get_target_variants.py \
+    get_target_variants.py \
         --target_bed $pgx_ontarget_rsids_bed \
         --vcf $vcf \
-        --output ${group}.detected_variants.csv
+        --output ${group}.detected_variants.csv \
+		--addchr $params.addchr
 	"""
 }
