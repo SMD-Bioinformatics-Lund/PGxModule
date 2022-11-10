@@ -44,8 +44,7 @@ process DEPTH_OF_TARGETS {
 	container = "${params.containers}/gatk3.simg"
 
 	input:
-		tuple val(group), file(ontarget_bam), file(ontarget_bai)
-        tuple val(group), file(target_interval_list)
+		tuple val(group), file(ontarget_bam), file(ontarget_bai), file(target_interval_list)
 
 	output:
 		tuple val(group), file("${group}.pgx_depth_at_missing.gdf"), emit: pgx_depth_at_missing

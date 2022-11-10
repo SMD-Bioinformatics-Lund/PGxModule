@@ -27,13 +27,12 @@ workflow PHARMACO_GENOMICS {
         ANNOTATE_VARIANTS ( vcfs_input )
         DETECTED_VARIANTS ( ANNOTATE_VARIANTS.out.annotated_vcf.combine(pgx_target_rsids) )
         SAMPLE_TARGET_LIST ( DETECTED_VARIANTS.out.detected_csv.combine(pgx_target_rsids) )
-        DEPTH_OF_TARGETS ( ONTARGET_BAM.out.bam_ontarget, SAMPLE_TARGET_LIST.out.pgx_target_interval_list )
+        DEPTH_OF_TARGETS ( ONTARGET_BAM.out.bam_ontarget.join(SAMPLE_TARGET_LIST.out.pgx_target_interval_list) )
         DEPTH_OF_BAITS ( ONTARGET_BAM.out.bam_ontarget.combine(GET_PADDED_BAITS.out.padded_baits_list) )
         APPEND_ID_TO_GDF ( DEPTH_OF_TARGETS.out.pgx_depth_at_missing.combine(pgx_target_rsids) )
         GET_CLIINICAL_GUIDELINES ( DETECTED_VARIANTS.out.detected_csv )
         GET_INTERACTION_GUIDELINES ( GET_CLIINICAL_GUIDELINES.out.possible_diplotypes )
-        GET_PGX_REPORT ( ANNOTATE_VARIANTS.out.annotated_vcf, DETECTED_VARIANTS.out.detected_csv, APPEND_ID_TO_GDF.out.depth_at_missing_annotate_gdf, GET_CLIINICAL_GUIDELINES.out.possible_diplotypes, DEPTH_OF_BAITS.out.padded_baits_list.combine(pgx_targets_bed), GET_INTERACTION_GUIDELINES.out.possible_interactions.combine(pgx_target_rsids) )
-
+        GET_PGX_REPORT ( ANNOTATE_VARIANTS.out.annotated_vcf.join(DETECTED_VARIANTS.out.detected_csv).join(APPEND_ID_TO_GDF.out.depth_at_missing_annotate_gdf).join( GET_CLIINICAL_GUIDELINES.out.possible_diplotypes).join(DEPTH_OF_BAITS.out.padded_baits_list).join(GET_INTERACTION_GUIDELINES.out.possible_interactions).combine(pgx_targets_bed).combine(pgx_target_rsids) )
     emit:
         pgx_report = GET_PGX_REPORT.out.pgx_html
 

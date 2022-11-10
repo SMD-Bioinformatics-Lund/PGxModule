@@ -81,12 +81,7 @@ process GET_PGX_REPORT {
 	container = "${params.containers}/rmarkdown.sif"
 
 	input:
-        tuple val(group), file(annotated_vcf)
-		tuple val(group), file(detected_variants)
-        tuple val(group), file(depth_at_missing_annotated_gdf)
-        tuple val(group), file(possible_diplotypes)
-        tuple val(group), file(depth_at_padded_baits), file(target_bed)
-        tuple val(group), file(possible_interactions), file(target_rsids)
+        tuple val(group), file(annotated_vcf), file(detected_variants), file(depth_at_missing_annotated_gdf), file(possible_diplotypes), file(depth_at_padded_baits), file(possible_interactions), file(target_bed), file(target_rsids)
 
 	output:
 		tuple val(group), file("${group}.pgx.html"), emit: pgx_html
