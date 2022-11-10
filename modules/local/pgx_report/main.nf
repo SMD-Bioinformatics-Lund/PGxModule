@@ -85,10 +85,8 @@ process GET_PGX_REPORT {
 		tuple val(group), file(detected_variants)
         tuple val(group), file(depth_at_missing_annotated_gdf)
         tuple val(group), file(possible_diplotypes)
-        tuple val(group), file(depth_at_padded_baits)
-        tuple val(group), file(possible_interactions)
-        file(target_rsids)
-        file(target_bed)
+        tuple val(group), file(depth_at_padded_baits), file(target_bed)
+        tuple val(group), file(possible_interactions), file(target_rsids)
 
 	output:
 		tuple val(group), file("${group}.pgx.html"), emit: pgx_html

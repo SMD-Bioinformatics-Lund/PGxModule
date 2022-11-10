@@ -8,9 +8,8 @@ process DETECTED_VARIANTS {
 	container = "${params.containers}/target_variants_python.simg"
 
 	input:
-		tuple val(group), file(vcf)
-		file(pgx_ontarget_rsids_bed)
-
+		tuple val(group), file(vcf), file(pgx_ontarget_rsids_bed)
+		
 	output:
 		tuple val(group), file("${group}.detected_variants.csv"), emit: detected_csv
 

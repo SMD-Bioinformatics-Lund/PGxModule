@@ -10,11 +10,11 @@ genome_file = file(params.genome_file)
 OUTDIR = params.outdir+'/'+params.subdir
 CRONDIR = params.crondir
 
-params.csv = "/data/bnf/dev/ram/Pipelines/DSL2/PGxModule/test/data/test_sample_sheet.csv"
+params.csv = "/fs1/ram/Pipelines/DSL2/PGxModule/test/data/test_sample_sheet.csv"
 csv = file(params.csv)
 println(csv)
 
-params.vcf = "/data/bnf/dev/ram/Pipelines/DSL2/PGxModule/test/data/test_vcf_sheet.csv"
+params.vcf = "/fs1/ram/Pipelines/DSL2/PGxModule/test/data/test_vcf_sheet.csv"
 vcf = file(params.vcf)
 println(vcf)
 
@@ -38,7 +38,6 @@ Channel
     .fromPath("${params.pgx_target_rsid}")
     .ifEmpty { exit 1, "PGX target rsids bed file not found: ${params.pgx_target_rsid}" }
     .set { input_pgx_target_rsids }
-
 
 
 workflow {
@@ -69,7 +68,7 @@ workflow.onComplete {
 
 	base = csv.getBaseName()
 	// logFile = file("/fs1/results/cron/logs/" + base + ".complete")
-	logFile = file("/data/bnf/dev/ram/Pipelines/DSL2/PGxModule/logs/" + base + ".complete")
+	logFile = file("/fs1/ram/Pipelines/DSL2/PGxModule/logs/" + base + ".complete")
 	logFile.text = msg
 	logFile.append(error)
 }

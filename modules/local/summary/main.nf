@@ -8,8 +8,8 @@ process SAMPLE_TARGET_LIST {
 	container = "${params.containers}/target_variants_python.simg"
 
 	input:
-		tuple val(group), file(detected_variants)
-        file(target_rsids)
+		tuple val(group), file(detected_variants), file(target_rsids)
+        
 
 	output:
 		tuple val(group), file("${group}.pgx_target_interval.list"), emit: pgx_target_interval_list
@@ -44,7 +44,7 @@ process DEPTH_OF_TARGETS {
 	container = "${params.containers}/gatk3.simg"
 
 	input:
-		tuple val(group), val(id), val(type), file(ontarget_bam), file(ontarget_bai)
+		tuple val(group), file(ontarget_bam), file(ontarget_bai)
         tuple val(group), file(target_interval_list)
 
 	output:
@@ -106,8 +106,7 @@ process DEPTH_OF_BAITS {
 	container = "${params.containers}/gatk3.simg"
 
 	input:
-        tuple val(group), val(id), val(type), file(ontarget_bam), file(ontarget_bai)
-        file(padded_baits_interval_list)
+        tuple val(group), file(ontarget_bam), file(ontarget_bai), file(padded_baits_interval_list)
 
 	output:
 		tuple val(group), file("${group}.pgx.gdf"), emit: padded_baits_list
@@ -163,7 +162,7 @@ process PADDED_BED_INTERVALS {
 
 process APPEND_ID_TO_GDF {
 	//  Add variant id to appropriate location in gdf
-	publishDir "${params.outdir}/${params.subdir}/report/coverage/", mode: 'copy', overwrite: true, pattern: "*.gdf"
+	publishDir "${params.outdir}/${params.subdir}/pgx/report/coverage/", mode: 'copy', overwrite: true, pattern: "*.gdf"
 	cpus 1
 	time '1h'
 	tag "$group"
@@ -172,8 +171,7 @@ process APPEND_ID_TO_GDF {
 	container = "${params.containers}/target_variants_python.simg"
 
 	input:
-		tuple val(group), file(pgx_depth_at_missing_gdf)
-		file(target_rsids)
+		tuple val(group), file(pgx_depth_at_missing_gdf), file(target_rsids)
 
 	output:
 		tuple val(group), file("${group}.pgx_depth_at_missing_annotated.gdf"),  emit: depth_at_missing_annotate_gdf
