@@ -1,0 +1,20 @@
+#Ignore reports, pngs, traces files
+dag.png
+report*html
+trace*
+.nextflow*
+work/
+
+#ignore logs
+*logs*
+
+#ignore test and tmp files
+test*
+tmp*
+
+#ignore huge image files
+envs/*simg
+envs/*sif
+
+#python chace
+bin/__pycache__/

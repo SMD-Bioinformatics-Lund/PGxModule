@@ -20,7 +20,7 @@ def filter_variants(vcf, read_ratio, depth, output):
         #  No multiallelic split
 
         if record.info["DP"] < depth:
-            record.filter.add("DP100")
+            record.filter.add(f"DP{depth}")
 
         elif len(ad) == 2:
             n_ref, n_alt = ad

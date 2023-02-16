@@ -1,6 +1,8 @@
 #!/usr/bin/env nextflow
 
 include { ONTARGET_BAM                  } from '../../modules/local/ontarget/main'
+include { HAPLOTYPECALLING              } from '../../modules/local/ontarget/main'
+include { VARIANT_FILTRATION            } from '../../modules/local/filtration/main'
 include { DETECTED_VARIANTS             } from '../../modules/local/detected_variants/main'
 include { ANNOTATE_VARIANTS             } from '../../modules/local/annotation/main'
 include { SAMPLE_TARGET_LIST            } from '../../modules/local/summary/main'
@@ -16,7 +18,6 @@ include { GET_PGX_REPORT                } from '../../modules/local/pgx_report/m
 workflow PHARMACO_GENOMICS {
     take: 
         bam_input
-        vcfs_input
         pgx_targets_bed
         pgx_target_rsids
     
@@ -24,7 +25,9 @@ workflow PHARMACO_GENOMICS {
         PADDED_BED_INTERVALS ( pgx_targets_bed )
         GET_PADDED_BAITS ( pgx_targets_bed )
         ONTARGET_BAM ( bam_input.combine(PADDED_BED_INTERVALS.out.padded_bed_intervals) )
-        ANNOTATE_VARIANTS ( vcfs_input )
+        HAPLOTYPECALLING ( ONTARGET_BAM.out.bam_ontarget )
+        VARIANT_FILTRATION ( HAPLOTYPECALLING.out.ontarget_vcf )
+        ANNOTATE_VARIANTS ( ONTARGET_BAM.out.bam_ontarget.join(VARIANT_FILTRATION.out.filtered_vcf) )
         DETECTED_VARIANTS ( ANNOTATE_VARIANTS.out.annotated_vcf.combine(pgx_target_rsids) )
         SAMPLE_TARGET_LIST ( DETECTED_VARIANTS.out.detected_csv.combine(pgx_target_rsids) )
         DEPTH_OF_TARGETS ( ONTARGET_BAM.out.bam_ontarget.join(SAMPLE_TARGET_LIST.out.pgx_target_interval_list) )

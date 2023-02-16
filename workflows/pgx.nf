@@ -8,12 +8,11 @@ workflow PGX {
 
 	take:
 		input_bam
-		input_vcfs
 		input_pgx_target_beds
 		input_pgx_target_rsids
 
 	main:
-		PHARMACO_GENOMICS ( input_bam, input_vcfs, input_pgx_target_beds, input_pgx_target_rsids )
+		PHARMACO_GENOMICS ( input_bam, input_pgx_target_beds, input_pgx_target_rsids )
 		.set { pgx_reports }
 
 	emit:

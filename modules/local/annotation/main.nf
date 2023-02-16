@@ -5,28 +5,32 @@ process ANNOTATE_VARIANTS {
 	tag "$group"
 	stageInMode 'copy'
 	stageOutMode 'copy'
-	container = "${params.containers}/target_variants_python.simg"
+	container = "${params.containers}/gatk4.simg"
 
 	input:
-		tuple val(group), file(vcf)
+		tuple val(group), file(bam), file(bai), file(vcf)
 
 	output:
 		tuple val(group), file("${group}.pgx_annotated.vcf"), emit: annotated_vcf
 	
 	script:
 	"""
-    modifyVCF.py \
-        --input $vcf \
-        --addrsid True \
-        --output ${group}.pgx_annotated.vcf
+    gatk VariantAnnotator \
+        -R $params.genome_file \
+        -V $vcf \
+        -I $bam \
+        -O ${group}.pgx_annotated.vcf \
+        --dbsnp $params.dbSNP
 	"""
 
 	stub:
 	"""
-    modifyVCF.py \
-        --input $vcf \
-        --addrsid True \
-        --output ${group}.pgx_annotated.vcf
+    gatk VariantAnnotator \
+        -R $params.genome_file \
+        -V $vcf \
+        -I $bam \
+        -O ${group}.pgx_annotated.vcf \
+        --dbsnp $params.dbSNP
 	"""
 
 }
