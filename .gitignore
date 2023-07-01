@@ -5,12 +5,16 @@ trace*
 .nextflow*
 work/
 
+# MISC
+TODO.md
+CMD.sh
+
 #ignore logs
-*logs*
+logs/
 
 #ignore test and tmp files
-test*
-tmp*
+test/
+tmp/
 
 #ignore huge image files
 envs/*simg
@@ -18,3 +22,5 @@ envs/*sif
 
 #python chace
 bin/__pycache__/
+bin/sentieon_init.sh
+sentieon.nf

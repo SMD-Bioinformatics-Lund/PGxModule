@@ -45,7 +45,6 @@ library(kableExtra)
 library(ggplot2)
 library(rmarkdown)
 library(scales)
-#library(DT)
 library(rmdformats)
 library(tidyverse)
 library(knitr)
@@ -105,7 +104,6 @@ kable(header_table, col.names=NULL) %>%
   kable_styling(full_width=T, bootstrap_options="striped") %>%
   column_spec(1, bold=T, border_right=T, width="15em")
 
-#datatable(header_table, rownames=FALSE, escape=FALSE, class = 'cell-border compact stripe', options=list(columnDefs = list(list(className = 'dt-center', targets = "_all")),searching = TRUE,pageLength = 10, scroller=T))
 ```  
 
 # Clinical recommendations based on genotypes

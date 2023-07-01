@@ -2,7 +2,7 @@
 
 nextflow.enable.dsl = 2
 
-include { PHARMACO_GENOMICS } from '../subworkflows/local/pharmacoGenomics'
+include { PHARMACO_GENOMICS         } from '../subworkflows/local/pharmacoGenomics'
 
 workflow PGX {
 
@@ -13,8 +13,7 @@ workflow PGX {
 
 	main:
 		PHARMACO_GENOMICS ( input_bam, input_pgx_target_beds, input_pgx_target_rsids )
-		.set { pgx_reports }
-
 	emit:
-        report = PHARMACO_GENOMICS.out.pgx_report
+        report   = PHARMACO_GENOMICS.out.pgx_report
+		versions = PHARMACO_GENOMICS.out.versions
 }
