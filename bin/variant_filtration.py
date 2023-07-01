@@ -10,24 +10,33 @@ def filter_variants(vcf, read_ratio, depth, output):
     """
     vcf_in = VariantFile(vcf)
     new_header = vcf_in.header
-    new_header.filters.add(f"AR{read_ratio}", None, None,
-                           f"Ratio of ref/alt reads lower than {read_ratio}")
+    new_header.filters.add(
+        f"AR{read_ratio}", None, None, f"Ratio of ref/alt reads lower than {read_ratio}"
+    )
     new_header.filters.add(f"DP{depth}", None, None, f"DP is lower than {depth}x")
     vcf_out = VariantFile(output, "w", header=new_header)
 
     for record in vcf_in.fetch():
-        ad = record.samples[0]["AD"]
+        try:
+            ad = record.samples[0]["AD"]
+        except KeyError:
+            ad = tuple([0])
         #  No multiallelic split
 
-        if record.info["DP"] < depth:
-            record.filter.add("DP100")
+        filters = []
 
-        elif len(ad) == 2:
+        if record.info["DP"] < depth:
+            filters.append(f"DP{depth}")
+
+        if len(ad) == 2:
             n_ref, n_alt = ad
             if n_alt / (n_ref + n_alt) < read_ratio:
-                record.filter.add(f"AR{read_ratio}")
-            else:
-                record.filter.add("PASS")
+                filters.append(f"AR{read_ratio}")
+
+        if filters == []:
+            filters.append(f"PASS")
+
+        record.filter.add(",".join(filters))
         vcf_out.write(record)
 
 
@@ -50,5 +59,5 @@ def main():
     filter_variants(input_vcf, read_ratio, depth, output_file)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

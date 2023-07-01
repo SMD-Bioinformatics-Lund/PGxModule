@@ -1,0 +1,26 @@
+#Ignore reports, pngs, traces files
+dag.png
+report*html
+trace*
+.nextflow*
+work/
+
+# MISC
+TODO.md
+CMD.sh
+
+#ignore logs
+logs/
+
+#ignore test and tmp files
+test/
+tmp/
+
+#ignore huge image files
+envs/*simg
+envs/*sif
+
+#python chace
+bin/__pycache__/
+bin/sentieon_init.sh
+sentieon.nf
