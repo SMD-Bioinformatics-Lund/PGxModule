@@ -17,9 +17,8 @@ workdir=${11}
 rmd_html=${12}
 output_file_html=${workdir}/${13}
 annotated_vcf=${14}
-
-dbSNP=$(grep "##VEP=" $annotated_vcf | sed 's/ /\n/g' | grep "dbSNP=" | cut -f2 -d "=" | sed 's/"//g')
-assembly_genome=$(grep "##VEP=" $annotated_vcf | sed 's/ /\n/g' | grep "assembly=" | cut -f2 -d "=" | sed 's/"//g' )
+dbSNP=${15}
+assembly_genome=${16}
 
 
 tmp_dir=$workdir/report_tmp

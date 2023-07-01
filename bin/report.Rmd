@@ -45,7 +45,6 @@ library(kableExtra)
 library(ggplot2)
 library(rmarkdown)
 library(scales)
-#library(DT)
 library(rmdformats)
 library(tidyverse)
 library(knitr)
@@ -60,7 +59,7 @@ figureNo = 0
 
 ```{r input, include=FALSE, echo=FALSE}
 
-detected_variants_df <- read.csv(found_variants, sep = "\t", stringsAsFactors = F, row.names = NULL)
+detected_variants <- read.csv(found_variants, sep = "\t", stringsAsFactors = F, row.names = NULL)
 missed_variants_df <- read.csv(missed_variants, sep = "\t", stringsAsFactors = F,  row.names = NULL)
 haplotype_definitions_df <- read.csv(haplotype_definitions, sep = "\t", stringsAsFactors = F,  row.names = NULL)
 clinical_guidelines_df <- read.csv(clinical_guidelines, sep = "\t", stringsAsFactors = F,  row.names = NULL)
@@ -70,29 +69,25 @@ interaction_guidelines_df <- read.csv(interaction_guidelines, sep = "\t", string
 
 ```{r input2, include=FALSE, echo=FALSE}
 # Formating
-detected_variants_df$Zygosity <- sapply(detected_variants_df$GT, function(x){
+detected_variants$Zygosity <- sapply(detected_variants$GT, function(x){
    b <- sum(as.numeric(strsplit(x, "[/|]", perl=T)[[1]]))
    return(c("Hetero-", "Homo-")[b])
 })
 risk_haplotypes <- array()
-if (nrow(detected_variants_df) != 0) {
-  detected_variants_df$Position <- sapply(1:nrow(detected_variants_df), function(i) paste0(detected_variants_df[i, 1], ":", detected_variants_df[i, "POS"]))
-  #detected_variants_df <- detected_variants_df %>% separate("AD", c("Ref.reads", "Alt.reads"), ",", remove=F)
-  detected_variants_df[, "Alt.reads"] <- as.numeric(detected_variants_df[, "VD"])
-  detected_variants_df[, "Ref.reads"] <- as.numeric(detected_variants_df[, "DP"]) - detected_variants_df[, "Alt.reads"]
-  detected_variants_df[, "Variant Frequency"] <- detected_variants_df[, "VAF"]
-  detected_variants_df$Haplotype <-
-    sapply(detected_variants_df$ID, function(x) get_haplotypes(x, haplotype_definitions_df))
-  columns <- c("Position", "GENE", "ID", "Haplotype", "Zygosity",  "Ref.reads", "Alt.reads", "Variant Frequency")
-
-  detected_variants_df_present <- detected_variants_df[, columns]
-  #detected_variants_df_present[, "Variant Frequency"] <- detected_variants_df_present[, "Alt.reads"]/(detected_variants_df_present[, "Alt.reads"] + detected_variants_df_present[, "Ref.reads"])
-  detected_variants_df_present[, "Possible Duplication"] <- sapply(detected_variants_df_present[, "Variant Frequency"], risk_duplication)
+if (nrow(detected_variants) != 0) {
+  detected_variants$Position <- sapply(1:nrow(detected_variants), function(i) paste0(detected_variants[i, 1], ":", detected_variants[i, "POS"]))
+  detected_variants <- detected_variants %>% separate("AD", c("Ref.reads", "Alt.reads"), ",", remove=F)
+  detected_variants[, "Ref.reads"] <- as.numeric(detected_variants[, "Ref.reads"])
+  detected_variants[, "Alt.reads"] <- as.numeric(detected_variants[, "Alt.reads"])
+  detected_variants$Haplotype <-
+    sapply(detected_variants$ID, function(x) get_haplotypes(x, haplotype_definitions_df))
+  columns <- c("Position", "GENE", "ID", "Haplotype", "Zygosity",  "Ref.reads", "Alt.reads", "GQ")
+  detected_variants_present <- detected_variants[, columns]
+  detected_variants_present[, "Variant Frequency"] <- detected_variants_present[, "Alt.reads"]/(detected_variants_present[, "Alt.reads"] + detected_variants_present[, "Ref.reads"])
+  detected_variants_present[, "Possible Duplication"] <- sapply(detected_variants_present[, "Variant Frequency"], risk_duplication)
   faulty_haplotypes <-
-          detected_variants_df_present[detected_variants_df_present[, "Possible Duplication"] == TRUE, "Haplotype"]
-
+          detected_variants_present[detected_variants_present[, "Possible Duplication"] == TRUE, "Haplotype"]
   faulty_haplotypes <- unique(unlist(sapply(faulty_haplotypes, function(x) strsplit(x, "/"))))
-
 } else {
   faulty_haplotypes <- array()
 }
@@ -109,7 +104,6 @@ kable(header_table, col.names=NULL) %>%
   kable_styling(full_width=T, bootstrap_options="striped") %>%
   column_spec(1, bold=T, border_right=T, width="15em")
 
-#datatable(header_table, rownames=FALSE, escape=FALSE, class = 'cell-border compact stripe', options=list(columnDefs = list(list(className = 'dt-center', targets = "_all")),searching = TRUE,pageLength = 10, scroller=T))
 ```  
 
 # Clinical recommendations based on genotypes
@@ -151,21 +145,21 @@ interaction_guidelines_df %>%
 ```
 
 # Clinically relevant variants discovered
-```{r detected_variants_df,results='asis',message=FALSE,warning=FALSE}
-if (nrow(detected_variants_df) != 0 ){
+```{r detected_variants,results='asis',message=FALSE,warning=FALSE}
+if (nrow(detected_variants) != 0 ){
   order_columns <- c("GENE", "ID", "Haplotype", "Position", "Zygosity", "Variant Frequency", "Possible Duplication")
 
   verbose_columns <- c(
     "Gene", "rsID", "Possible Haplotypes", "Position",
     "Zygosity", "Variant Frequency", "Possible Duplication"
   )
-  detected_variants_df_present <- detected_variants_df_present[, order_columns]
-  colnames(detected_variants_df_present) <- verbose_columns
+  detected_variants_present <- detected_variants_present[, order_columns]
+  colnames(detected_variants_present) <- verbose_columns
 
-  detected_variants_df_present %>%
+  detected_variants_present %>%
     kable() %>%
     kable_styling() %>%
-    row_spec(which(detected_variants_df_present[, "Possible Duplication"] == T), bold=T, color="white", background="red")
+    row_spec(which(detected_variants_present[, "Possible Duplication"] == T), bold=T, color="white", background="red")
 } else {
 
 cat("<b>There are no variants detected.\n</b>")

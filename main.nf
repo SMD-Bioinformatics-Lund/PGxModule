@@ -5,29 +5,20 @@ nextflow.enable.dsl = 2
 include { PGX } from './workflows/pgx'
 
 println(params.genome_file)
-genome_file = file(params.genome_file)
+// genome_file = file(params.genome_file)
 
 OUTDIR = params.outdir+'/'+params.subdir
 CRONDIR = params.crondir
 
-params.csv = "/fs1/ram/Pipelines/DSL2/PGxModule/test/data/test_sample_sheet.csv"
-csv = file(params.csv)
+// params.csv_file = "/fs1/ram/Testing/PGx_Module/test_data/EBI/ERR1955390/somatic_solid_hg38_analysis/NA20296_PGx.csv"
+csv = file(params.csv_file)
 println(csv)
 
-params.vcf = "/fs1/ram/Pipelines/DSL2/PGxModule/test/data/test_vcf_sheet.csv"
-vcf = file(params.vcf)
-println(vcf)
-
 
 Channel
-    .fromPath(params.csv).splitCsv(header:true)
+    .fromPath(params.csv_file).splitCsv(header:true)
     .map{ row-> tuple(row.group, row.id, row.type, file(row.bam), file(row.bai)) }
     .set { input_bam }
-
-Channel
-    .fromPath(params.vcf).splitCsv(header:true)
-    .map{ row-> tuple(row.group, file(row.vcf)) }
-    .set { input_vcfs }
 
 Channel
     .fromPath("${params.pgx_target_regions}")
@@ -42,7 +33,7 @@ Channel
 
 workflow {
 
-	PGX(input_bam, input_vcfs, input_pgx_target_beds, input_pgx_target_rsids)
+	PGX(input_bam, input_pgx_target_beds, input_pgx_target_rsids)
 }
 
 
@@ -67,8 +58,7 @@ workflow.onComplete {
 		.stripIndent()
 
 	base = csv.getBaseName()
-	// logFile = file("/fs1/results/cron/logs/" + base + ".complete")
-	logFile = file("/fs1/ram/Pipelines/DSL2/PGxModule/logs/" + base + ".complete")
+	logFile = file("/fs1/results/cron/logs/" + base + "pgx.complete")
 	logFile.text = msg
 	logFile.append(error)
 }
