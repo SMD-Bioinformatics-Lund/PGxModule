@@ -11,12 +11,12 @@ OUTDIR = params.outdir+'/'+params.subdir
 CRONDIR = params.crondir
 
 // params.csv_file = "/fs1/ram/Testing/PGx_Module/test_data/EBI/ERR1955390/somatic_solid_hg38_analysis/NA20296_PGx.csv"
-csv = file(params.csv_file)
+csv = file(params.csv)
 println(csv)
 
 
 Channel
-    .fromPath(params.csv_file).splitCsv(header:true)
+    .fromPath(params.csv).splitCsv(header:true)
     .map{ row-> tuple(row.group, row.id, row.type, file(row.bam), file(row.bai)) }
     .set { input_bam }
 
@@ -58,7 +58,7 @@ workflow.onComplete {
 		.stripIndent()
 
 	base = csv.getBaseName()
-	logFile = file("/fs1/results/cron/logs/" + base + "pgx.complete")
+	logFile = file("${params.resultsdir}/cron/logs/" + base + "pgx.complete")
 	logFile.text = msg
 	logFile.append(error)
 }

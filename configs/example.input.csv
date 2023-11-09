@@ -1,2 +1,2 @@
-clarity_sample_id,id,type,assay,diagnosis,group,clarity_pool_id,platform,bam,bai
-ERR1955390,NA20296,T,gmssolidtumorv3-0-trimming-dev,solid,NA20296,122-76668,illumina,/fs1/ram/Testing/PGx_Module/test_data/EBI/ERR1955390/somatic_solid_hg38_analysis/bam/NA20296.T.bwa.umi.sort.ontarget.bam,/fs1/ram/Testing/PGx_Module/test_data/EBI/ERR1955390/somatic_solid_hg38_analysis/bam/NA20296.T.bwa.umi.sort.ontarget.bam.bai
+clarity_sample_id,id,type,assay,diagnosis,group,clarity_pool_id,platform,sequencing_run,n_reads,bam,bai,purity
+CMD707A3453,22PM07620-PGx-231020,T,gmssolidtumorv3-0-pgx,solid,22PM07620-PGx-231020,122-358387,illumina,231103_A00681_0924_BHKMM7DRX3,60130956,/fs2/seqdata/NovaSeq/231103_A00681_0924_BHKMM7DRX3/Data/Intensities/BaseCalls/CMD707A3453_122-358387_S16_R1_001.fastq.gz,/fs2/seqdata/NovaSeq/231103_A00681_0924_BHKMM7DRX3/Data/Intensities/BaseCalls/CMD707A3453_122-358387_S16_R2_001.fastq.gz,0.30
