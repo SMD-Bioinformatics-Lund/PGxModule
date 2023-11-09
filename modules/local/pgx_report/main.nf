@@ -1,6 +1,6 @@
 process GET_CLIINICAL_GUIDELINES {
     // Given detected variants, get possible Haplotype combinations
-    publishDir "${params.outdir}/${params.subdir}/report/possible_diploids/", mode: 'copy', overwrite: true, pattern: "*.csv"
+    publishDir "${params.outdir}/${params.subdir}/report/possible_diploids/", mode: 'copy', overwrite: true, pattern: "*.tsv"
 	cpus 1
 	time '1h'
 	tag "$group"
@@ -33,7 +33,7 @@ process GET_CLIINICAL_GUIDELINES {
 
 process GET_INTERACTION_GUIDELINES {
     // Given Haplotype Combinations, get possible interactions betweens these
-    publishDir "${params.outdir}/${params.subdir}/report/possible_interactions/", mode: 'copy', overwrite: true, pattern: "*.csv"
+    publishDir "${params.outdir}/${params.subdir}/report/possible_interactions/", mode: 'copy', overwrite: true, pattern: "*.tsv"
 	cpus 1
 	time '1h'
 	tag "$group"

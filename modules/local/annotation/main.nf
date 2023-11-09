@@ -1,5 +1,5 @@
 process BCFTOOLS_ANNOTATION {
-	publishDir "${params.outdir}/${params.subdir}/vcf", mode: 'copy', overwrite: true, pattern: "*.csv"
+	publishDir "${params.outdir}/${params.subdir}/vcf", mode: 'copy', overwrite: true, pattern: "*.vcf"
 	cpus 20
 	time '3h'
 	tag "$group"

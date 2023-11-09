@@ -149,7 +149,7 @@ process DEPTH_OF_BAITS {
 }
 
 process PADDED_BED_INTERVALS {
-	publishDir "${params.outdir}/${params.subdir}/bam/", mode: 'copy', overwrite: true, pattern: "*.gdf"
+	publishDir "${params.outdir}/${params.subdir}/bam/", mode: 'copy', overwrite: true, pattern: "*.bed"
 	cpus 1
 	time '1h'
 	tag "pgx_bed_padded_intervals"
