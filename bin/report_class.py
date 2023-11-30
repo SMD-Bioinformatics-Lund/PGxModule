@@ -70,7 +70,6 @@ class Report(UtilityFunctions):
             "target_rsids",
             "annotated_vcf",
             "dbSNP_version",
-            "ref_version",
             "output",
             "report_template",
             "genome_version",
