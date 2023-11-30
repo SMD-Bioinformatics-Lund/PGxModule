@@ -16,11 +16,18 @@ logs/
 test/
 tmp/
 
-#ignore huge image files
+#envs
 envs/*simg
 envs/*sif
+.venv/
+venv/
+envs/requirements.txt
+
 
 #python chace
 bin/__pycache__/
 bin/sentieon_init.sh
 sentieon.nf
+create_pgx_samplesheet.sh
+
+

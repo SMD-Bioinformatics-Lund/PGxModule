@@ -69,7 +69,7 @@ process GET_PGX_REPORT {
 	tag "$group"
 	stageInMode 'copy'
 	stageOutMode 'copy'
-	container = "${params.rmarkdown_image}"
+	container = "${params.jinja_image}"
 
 	input:
         tuple val(group), file(annotated_vcf), file(detected_variants), file(depth_at_missing_annotated_gdf), file(possible_diplotypes), file(depth_at_padded_baits), file(possible_interactions), file(target_bed), file(target_rsids)
@@ -79,7 +79,24 @@ process GET_PGX_REPORT {
 
     script:
 	"""
-    bash runReport.sh $detected_variants $depth_at_missing_annotated_gdf $params.haplotype_definitions $possible_diplotypes $possible_interactions $group $target_bed $params.pgxref_folder $depth_at_padded_baits $target_rsids \$PWD $params.baseDir/bin/report.Rmd ${group}.pgx.html $annotated_vcf $params.dbSNP_version $params.ref_version
+	create_report.py \
+		--group $group \
+		--read_depth $params.DP \
+		--detected_variants $detected_variants \
+		--missing_annotated_depth $depth_at_missing_annotated_gdf \
+		--haplotype_definitions $params.haplotype_definitions \
+		--possible_diplotypes $possible_diplotypes \
+		--possible_interactions $possible_interactions \
+		--target_bed $target_bed \
+		--padded_baits_depth $depth_at_padded_baits \
+		--target_rsids $target_rsids \
+		--annotated_vcf $annotated_vcf \
+		--dbSNP_version $params.dbSNP_version \
+		--genome_version $params.ref_version \
+		--output ${group}.pgx.html \
+		--report_template $params.report_template \
+		--report_css $params.report_css \
+
 	"""
 
     stub:
