@@ -33,12 +33,6 @@ parser.add_argument(
     help=f"Path to the report template file (default: {os.path.join(TEMPLATE_FOLDER,'report.html')})",
 )
 parser.add_argument(
-    "--report_css",
-    type=str,
-    default=os.path.join(TEMPLATE_FOLDER, "report.css"),
-    help=f"Path to the report css file (default: {os.path.join(TEMPLATE_FOLDER,'report.css')})",
-)
-parser.add_argument(
     "--detected_variants",
     type=str,
     required=True,
@@ -117,7 +111,6 @@ if __name__ == "__main__":
         genome_version=args.genome_version,
         output=args.output,
         report_template=args.report_template,
-        report_css=args.report_css,
     )
 
     report_instance.create_report()
@@ -128,6 +121,6 @@ if __name__ == "__main__":
 python /data/bnf/dev/ram/Pipelines/DSL2/PGxModule/bin/create_report.py --group 1DPYD-PGx-231113 --read_depth 100 --detected_variants 1DPYD-PGx-231113.detected_variants.tsv --missing_annotated_depth 1DPYD-PGx-231113.pgx_depth_at_missing_annotated.gdf --haplotype_definitions /data/bnf/dev/ram/Pipelines/DSL2/PGxModule/resources/haplotypes/haplotype_definitions.csv --possible_diplotypes 1DPYD-PGx-231113.possible_diplotypes.tsv --possible_interactions 1DPYD-PGx-231113.possible_interactions.tsv --target_bed exons_variants_pharmacogenomics_18_06_2019_ex_cyp2d6_hg38.bed --padded_baits_depth 1DPYD-PGx-231113.pgx.gdf --target_rsids target_rsid_hg38.bed --annotated_vcf 1DPYD-PGx-231113.haplotypes.filtered.annotated.vcf --dbSNP_version 151 --output example_output.html --genome_version hg38 --report_template /data/bnf/dev/ram/Pipelines/DSL2/PGxModule/resources/templates/report.html
 
 
-singularity run --bind /fs1 --bind /data /data/bnf/dev/ram/Pipelines/DSL2/PGxModule/envs/jinja_report.sif python3 /data/bnf/dev/ram/Pipelines/DSL2/PGxModule/bin/create_report.py --group 1DPYD-PGx-231113 --read_depth 100 --detected_variants 1DPYD-PGx-231113.detected_variants.tsv --missing_annotated_depth 1DPYD-PGx-231113.pgx_depth_at_missing_annotated.gdf --haplotype_definitions /data/bnf/dev/ram/Pipelines/DSL2/PGxModule/resources/haplotypes/haplotype_definitions.csv --possible_diplotypes 1DPYD-PGx-231113.possible_diplotypes.tsv --possible_interactions 1DPYD-PGx-231113.possible_interactions.tsv --target_bed exons_variants_pharmacogenomics_18_06_2019_ex_cyp2d6_hg38.bed --padded_baits_depth 1DPYD-PGx-231113.pgx.gdf --target_rsids target_rsid_hg38.bed --annotated_vcf 1DPYD-PGx-231113.haplotypes.filtered.annotated.vcf --dbSNP_version 151 --output example_output.html --genome_version hg38 --report_template /data/bnf/dev/ram/Pipelines/DSL2/PGxModule/resources/templates/report.html --report_css /data/bnf/dev/ram/Pipelines/DSL2/PGxModule/resources/templates/report.css
+singularity run --bind /fs1 --bind /data /data/bnf/dev/ram/Pipelines/DSL2/PGxModule/envs/jinja_report.sif python3 /data/bnf/dev/ram/Pipelines/DSL2/PGxModule/bin/create_report.py --group 1DPYD-PGx-231113 --read_depth 100 --detected_variants 1DPYD-PGx-231113.detected_variants.tsv --missing_annotated_depth 1DPYD-PGx-231113.pgx_depth_at_missing_annotated.gdf --haplotype_definitions /data/bnf/dev/ram/Pipelines/DSL2/PGxModule/resources/haplotypes/haplotype_definitions.csv --possible_diplotypes 1DPYD-PGx-231113.possible_diplotypes.tsv --possible_interactions 1DPYD-PGx-231113.possible_interactions.tsv --target_bed exons_variants_pharmacogenomics_18_06_2019_ex_cyp2d6_hg38.bed --padded_baits_depth 1DPYD-PGx-231113.pgx.gdf --target_rsids target_rsid_hg38.bed --annotated_vcf 1DPYD-PGx-231113.haplotypes.filtered.annotated.vcf --dbSNP_version 151 --output example_output.html --genome_version hg38 --report_template /data/bnf/dev/ram/Pipelines/DSL2/PGxModule/resources/templates/report.html 
 
 """

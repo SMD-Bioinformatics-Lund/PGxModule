@@ -95,8 +95,6 @@ process GET_PGX_REPORT {
 		--genome_version $params.ref_version \
 		--output ${group}.pgx.html \
 		--report_template $params.report_template \
-		--report_css $params.report_css \
-
 	"""
 
     stub:

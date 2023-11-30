@@ -1,6 +1,5 @@
 #Ignore reports, pngs, traces files
 dag.png
-report*html
 trace*
 .nextflow*
 work/

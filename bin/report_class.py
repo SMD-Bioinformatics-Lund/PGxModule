@@ -73,7 +73,6 @@ class Report(UtilityFunctions):
             "output",
             "report_template",
             "genome_version",
-            "report_css",
         ]
 
         missing_args = [arg for arg in required_args if arg not in kwargs]
@@ -338,7 +337,6 @@ class Report(UtilityFunctions):
             date=datetime.now().strftime("%Y-%m-%d"),
             dbSNP_version=self.dbSNP_version,
             genome_version=self.genome_version,
-            report_css=self.report_css,
         )
 
         # Save the rendered content to the output file
