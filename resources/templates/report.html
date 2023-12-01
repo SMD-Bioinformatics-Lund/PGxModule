@@ -6,22 +6,22 @@
 <div class="report_div">
   <table class='report_general'> 
     <tr>
-      <td class="report_key">Patientnamn</td><td class="report_val">&lt;CLARITY-PATIENT_NAME-CLARITY&gt;</td>
+      <td class="report_key">Patientnamn</td><td class="report_val">&lt;PATIENT_NAME&gt;</td>
     </tr>
     <tr>
-      <td class="report_key">Personnummer</td><td class="report_val">&lt;CLARITY-PERSONAL_NUMBER-CLARITY&gt;</td>
+      <td class="report_key">Personnummer</td><td class="report_val">&lt;PERSONAL_IDENTITY_NUMBER&gt;</td>
     </tr>
     <tr>
       <td class="report_key">Prov-ID</td><td class="report_val">{{ group }}</td>
     </tr>
     <tr>
-      <td class="report_key">Registreringsdatum</td><td class="report_val">&lt;CLARITY-REGISTRATION_DATE-CLARITY&gt;</td>
+      <td class="report_key">Registreringsdatum</td><td class="report_val">&lt;REGISTRATION_DATE&gt;</td>
     </tr>
     <tr>
-      <td class="report_key">Provtyp</td><td class="report_val">&lt;CLARITY-SAMPLE_TYPE-CLARITY&gt;</td>
+      <td class="report_key">Provtyp</td><td class="report_val">&lt;SAMPLE_TYPE&gt;</td>
     </tr>
     <tr>
-      <td class="report_key">Frågeställning</td><td class="report_val">PGx (DPYD, TMPT, UGT1A1)</td>
+      <td class="report_key">Frågeställning</td><td class="report_val">PGx (DPYD, TMPT, NUDT15)</td>
     </tr>
     <tr>
       <td class="report_key">Analysmetod</td><td class="report_val">NGS med PGx</td>
@@ -50,7 +50,7 @@
     {% if clincial_variants is not none %}
       {% for row in clincial_variants %}
         {% if row['Possible Duplication'] == true %}
-          <tr style="text-align:left;font-weight: bold;background-color: #FD89B3 !important;" >
+          <tr style="text-align:left;background-color: #FFE6E6 !important;" >
         {% else %}
           <tr>
         {% endif %}
@@ -75,7 +75,7 @@
 <div class="conclusion">
   <div class="results_summary">
   {% if guidelines_warnings|length > 0 %}
-    En eller flera varianter som tillhör haplotyp har flagats som osäker.<br> Följ inte rödmarkerade kliniska rekommendationer!
+    En eller flera varianter som tillhör haplotyp har flagats som osäker.<br> De rosamarkerad fälten bör verifieras med blodprov!
   {% elif clincial_variants is none %}
     Inga kliniskt relevanta varianter hittades.<br> Följ de vanliga riktlinjerna.
   {% elif guidelines_warnings|length == 0 and clincial_variants is not none  %}
@@ -99,7 +99,7 @@
     {% if guidelines_present is not none %}
       {% for row in guidelines_present %}
         {% if (loop.index -1 ) in guidelines_warnings %}
-          <tr style="text-align:left;font-weight: bold;background-color: #FD89B3 !important;">
+          <tr style="text-align:left;background-color: #FFE6E6 !important;">
         {% else %}
           <tr>
         {% endif %}
@@ -131,7 +131,7 @@
     {% if possible_interactions is not none %}
       {% for row in possible_interactions %}
         {% if (loop.index -1 ) in interactions_warnings %}
-          <tr style="text-align:left;font-weight: bold;background-color: #FD89B3 !important;">
+          <tr style="text-align:left;background-color: #FFE6E6 !important;">
         {% else %}
           <tr>
         {% endif %}
@@ -177,13 +177,32 @@
   </table>
 </div>
 
-<span class="report_header">Analysbeskrivning</span>
-<div class="analysis_description">
+<div class="analysis_description" style="page-break-inside:avoid;">
+  <span class="report_header">Analysbeskrivning</span>
   <p>
-    Analysen avser somatiska detektion av varianter i samtliga 191 gener (en korresponderande hudbiopsi används som kontrollmaterial). För CEBPA undersöks även konstitutionella varianter. Vid avsaknad av kontrollmaterial undersöks endast ett begränsat antal gener enligt fördefinierade genlistor för AML (NPM1, CEBPA, FLT3), MPN (JAK2, CALR, MPN) samt KLL (TP53, NOTCH1, SF3B1). Analysen avser detektion av SNVs som förändrar aminosyrasekvensen i exon samt i regioner som påverkar splicing, små insertioner/deletioner (upp till runt 20-50 bp) samt FLT3-ITD.  Som krav för godkänd sekvens krävs generellt en medeltäckning på 1000x (1000 läsningar över en position i genomet). Då kraven på godkänd sekvens uppfylls ligger metodens känslighet på en variantallelfrekvens (VAF) på ≥ 3 %. Proverna är sekvenserade på Illumina-instrument. Somatiskt detekterade varianter klassas som Tier I, II, III eller IV enligt riktlinjer för tolkning och rapportering av sekvens varianter inom cancer (Tabell 2). [1] Tier IV varianter rapporteras inte ut.
+    Paired-end sekvensering (Illumina) av en nationellt framtagen genpanel (Farmakogenetik (PGx), Twist custom panel). Den aktuella analysen täcker de genetiska varianter som nämns i tabell 1. I tabell 2 finns alla de genetiska varianter som ingår i PGx panelen. Framtida kunskap kan komma att modifiera aktuell tolkning.
   </p>
+</div>
+<div class="analysis_description" style="page-break-inside:avoid;">
+  {% if gene_list is not none %}
+    <p><b>Tabell 1: Gener som ingår i PGx-analysen</b></p>
+    <table class="genetable">
+      <tr>
+        {% for gene in gene_list %}
+          <td>
+            {{ gene }}
+          </td>
+          {% if loop.index % 10 == 0 %}
+            </tr><tr>
+          {% endif %}
+        {% endfor %}
+      </tr>
+    </table>
+  {% endif %}
+</div>
+<div class="analysis_description" style="page-break-inside:avoid;">
   {% if targets is not none %}
-    <p><b>Tabell 1: Haplotyper som ingår i PGx-analysen</b></p>
+    <p><b>Tabell 2: Haplotyper som ingår i PGx-analysen</b></p>
     <table class="genetable">
       <tr>
         {% for target in targets %}
@@ -197,6 +216,8 @@
       </tr>
     </table>
   {% endif %}
+</div>
+<div class="analysis_description" style="page-break-inside:avoid;">
 <p>
   <b>Referenser</b><p>
   [1] Standards and guidelines for the interpretation and reporting of sequence variants in cancer. Li et al, Journal of Molecular Diagnostics, 2017.

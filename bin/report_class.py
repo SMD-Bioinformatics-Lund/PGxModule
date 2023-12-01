@@ -4,6 +4,7 @@ import numpy as np
 from datetime import datetime
 import jinja2
 from weasyprint import HTML
+import base64
 
 
 class UtilityFunctions:
@@ -43,6 +44,11 @@ class UtilityFunctions:
         ]
         return "/".join(haplo)
 
+    def create_base64_logo(self, logo_path):
+        with open(logo_path, "rb") as image_file:
+            encoded_string = base64.b64encode(image_file.read())
+        return encoded_string.decode("utf-8")
+
 
 class Report(UtilityFunctions):
     def __init__(self, **kwargs) -> None:
@@ -54,6 +60,8 @@ class Report(UtilityFunctions):
         self.possible_diplotypes_df = self.readfile(self.possible_diplotypes)
         self.possible_interactions_df = self.readfile(self.possible_interactions)
         self.target_bed_df = self.readfile(self.target_bed)
+        self.target_rsids_df = self.readfile(self.target_rsids)
+        self.logo_base64 = self.create_base64_logo(self.logo)
 
     def _check_args(self, **kwargs):
         # Check if all required arguments are present
@@ -73,6 +81,7 @@ class Report(UtilityFunctions):
             "output",
             "report_template",
             "genome_version",
+            "logo",
         ]
 
         missing_args = [arg for arg in required_args if arg not in kwargs]
@@ -298,6 +307,16 @@ class Report(UtilityFunctions):
         else:
             return None
 
+    def get_genes(self) -> dict | None:
+        if self.target_rsids_df is None:
+            return None
+        if self.target_rsids_df.empty:
+            return None
+
+        self.target_rsids_df.columns = ["chr", "start", "end", "rsID", "gene"]
+        genes = self.target_rsids_df["gene"].unique().tolist()
+        return genes
+
     def create_report(self):
         targets = self.get_targets()
         clincial_variants = self.get_clinically_relevant_variants()
@@ -312,6 +331,7 @@ class Report(UtilityFunctions):
         low_depth_targets = self.get_low_depth_targets(
             read_depth_threshold=self.read_depth
         )
+        gene_list = self.get_genes()
 
         # Render the Jinja2 template
         template_loader = jinja2.FileSystemLoader(
@@ -337,13 +357,15 @@ class Report(UtilityFunctions):
             date=datetime.now().strftime("%Y-%m-%d"),
             dbSNP_version=self.dbSNP_version,
             genome_version=self.genome_version,
+            gene_list=gene_list,
+            logo_base64=self.logo_base64,
         )
 
         # Save the rendered content to the output file
         with open(self.output, "w") as output_file:
             output_file.write(rendered_content)
 
-        # pdf_file_path = "output.pdf"
-        # HTML(string=rendered_content).write_pdf(pdf_file_path)
+        pdf_file_path = f"{self.output}.pdf"
+        HTML(string=rendered_content).write_pdf(pdf_file_path)
 
         print(f"Report saved to: {self.output}")
