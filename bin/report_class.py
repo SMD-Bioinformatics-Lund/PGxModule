@@ -105,10 +105,10 @@ class Report(UtilityFunctions):
         """
         var_df = self.readfile(self.detected_variants)
         if var_df is None:
-            return []
+            return None
 
         if var_df.empty:
-            return []
+            return None
 
         # Assuming detected_variants is a DataFrame with a 'GT' column
         var_df["Zygosity"] = var_df["GT"].apply(
@@ -181,7 +181,7 @@ class Report(UtilityFunctions):
         Returns:
             list: List of faulty haplotypes.
         """
-        if variants_df.empty or variants_df is None:
+        if variants_df is None:
             return []
 
         faulty_haplotypes = (

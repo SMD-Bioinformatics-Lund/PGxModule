@@ -75,7 +75,7 @@
 <div class="conclusion">
   <div class="results_summary">
   {% if guidelines_warnings|length > 0 %}
-    En eller flera varianter som tillhör haplotyp har flagats som osäker.<br> De rosamarkerad fälten bör verifieras med blodprov!
+    En eller flera varianter som tillhör haplotyp har flagats som osäker.<br> De rosamarkerade fälten bör verifieras med blodprov!
   {% elif clincial_variants is none %}
     Inga kliniskt relevanta varianter hittades.<br> Följ de vanliga riktlinjerna.
   {% elif guidelines_warnings|length == 0 and clincial_variants is not none  %}
