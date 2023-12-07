@@ -2,23 +2,16 @@
 
 nextflow.enable.dsl = 2
 
-include { PGX } from './workflows/pgx'
+include { PGX 							} from './workflows/pgx'
 
 println(params.genome_file)
-// genome_file = file(params.genome_file)
 
 OUTDIR = params.outdir+'/'+params.subdir
 CRONDIR = params.crondir
 
-// params.csv_file = "/fs1/ram/Testing/PGx_Module/test_data/EBI/ERR1955390/somatic_solid_hg38_analysis/NA20296_PGx.csv"
 csv = file(params.csv)
 println(csv)
 
-
-Channel
-    .fromPath(params.csv).splitCsv(header:true)
-    .map{ row-> tuple(row.group, row.id, row.type, file(row.bam), file(row.bai)) }
-    .set { input_bam }
 
 Channel
     .fromPath("${params.pgx_target_regions}")
@@ -33,7 +26,11 @@ Channel
 
 workflow {
 
-	PGX(input_bam, input_pgx_target_beds, input_pgx_target_rsids)
+	PGX (
+		input_pgx_target_beds, 
+		input_pgx_target_rsids
+	)
+
 }
 
 
