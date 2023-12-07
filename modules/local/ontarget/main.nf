@@ -8,34 +8,28 @@ process ONTARGET_BAM {
 
     output:
         tuple val(group), file("${group}.dedup.ontarget.pgx.bam"), file("${group}.dedup.ontarget.pgx.bam.bai"), emit: bam_ontarget
-        tuple val(group), file("${group}.${task.process.split(':').last()}.versions.yaml"), emit: versions
+        path "versions.yml",                                                                                    emit: versions
 
     script:
-    def processName = task.process.toString().split(':').last()
-    """
-    samtools view -h -b $bam -L $pgx_ontarget_padded_bed -M > ${group}.dedup.ontarget.pgx.bam
-    samtools index ${group}.dedup.ontarget.pgx.bam
-    
-    {
-        echo -e "${processName}:"
-        echo -e "\tSAMtools:"
-        echo -e "\t\tversion: \$(samtools --version 2>&1 | grep 'samtools' | sed 's/^.*samtools //; s/Using.*\$//')"
-        echo -e "\t\tcontainer: ${task.container}"
-    } > "${group}.${processName}.versions.yaml"
-    """
+        """
+        samtools view -h -b $bam -L $pgx_ontarget_padded_bed -M > ${group}.dedup.ontarget.pgx.bam
+        samtools index ${group}.dedup.ontarget.pgx.bam
+
+        cat <<-END_VERSIONS > versions.yml
+        "${task.process}":
+            samtools: \$(samtools --version 2>&1 | grep 'samtools' | sed 's/^.*samtools //; s/Using.*\$//')
+        END_VERSIONS
+        """
 
     stub:
-    def processName = task.process.toString().split(':').last()
-    """
-    touch ${group}.dedup.ontarget.pgx.bam ${group}.dedup.ontarget.pgx.bam.bai
+        """
+        touch ${group}.dedup.ontarget.pgx.bam ${group}.dedup.ontarget.pgx.bam.bai
 
-    {
-        echo -e "${processName}:"
-        echo -e "\tSAMtools:"
-        echo -e "\t\tversion: \$(samtools --version 2>&1 | grep 'samtools' | sed 's/^.*samtools //; s/Using.*\$//')"
-        echo -e "\t\tcontainer: ${task.container}"
-    } > "${group}.${processName}.versions.yaml"
-    """
+        cat <<-END_VERSIONS > versions.yml
+        "${task.process}":
+            samtools: \$(samtools --version 2>&1 | grep 'samtools' | sed 's/^.*samtools //; s/Using.*\$//')
+        END_VERSIONS
+        """
 }
 
 
@@ -49,45 +43,33 @@ process GATK_HAPLOTYPING {
 
     output:
         tuple val(group), file("${group}.GATK.haplotypes.vcf.gz"), file("${group}.GATK.haplotypes.vcf.gz.tbi"), emit: haplotypes
-        tuple val(group), file("${group}.${task.process.split(':').last()}.versions.yaml"), emit: versions
+        path "versions.yml",                                                                                    emit: versions
 
     script:
-    def processName = task.process.toString().split(':').last()
-    """
-    gatk HaplotypeCaller -R $params.genome_file -I $bam -O ${group}.GATK.haplotypes.vcf
-    bgzip -c ${group}.sentieon.haplotypes.vcf > ${group}.sentieon.haplotypes.vcf.gz
-    tabix ${group}.sentieon.haplotypes.vcf.gz
-    {
-        echo -e "${processName}:"
-        echo -e "\tGATK HaplotypeCaller:"
-        echo -e "\t\tversion: \$(gatk --version 2>&1 | grep 'The Genome Analysis Toolkit (GATK)' | sed -e 's/The Genome Analysis Toolkit (GATK) //g')"
-        echo -e "\t\tcontainer: ${task.container}"
-        echo -e "\tbgzip:"
-        echo -e "\t\tversion: \$(bgzip --version 2>&1 | grep 'bgzip' | sed 's/.* //g')"
-        echo -e "\t\tcontainer: ${task.container}"
-        echo -e "\ttabix:"
-        echo -e "\t\tversion: \$(tabix --version 2>&1 | grep 'tabix' | sed 's/.* //g')"
-        echo -e "\t\tcontainer: ${task.container}"
-    } > "${group}.${processName}.versions.yaml"
-    """
+        """
+        gatk HaplotypeCaller -R $params.genome_file -I $bam -O ${group}.GATK.haplotypes.vcf
+        bgzip -c ${group}.sentieon.haplotypes.vcf > ${group}.sentieon.haplotypes.vcf.gz
+        tabix ${group}.sentieon.haplotypes.vcf.gz
+
+        cat <<-END_VERSIONS > versions.yml
+        "${task.process}":
+            gatk4: \$(echo \$(gatk --version 2>&1) | sed 's/^.*(GATK) v//; s/ .*\$//')
+            bgzip: \$(bgzip --v | grep 'bgzip' | sed 's/.* //g')
+            tabix: \$(echo \$(tabix -h 2>&1) | sed 's/^.*Version: //; s/ .*\$//')
+        END_VERSIONS
+        """
 
     stub:
-    def processName = task.process.toString().split(':').last()
-    """
-    touch ${group}.sentieon.haplotypes.vcf.gz ${group}.sentieon.haplotypes.vcf.gz.tbi
-    {
-        echo -e "${processName}:"
-        echo -e "\tGATK HaplotypeCaller:"
-        echo -e "\t\tversion: \$(gatk --version 2>&1 | grep 'The Genome Analysis Toolkit (GATK)' | sed -e 's/The Genome Analysis Toolkit (GATK) //g')"
-        echo -e "\t\tcontainer: ${task.container}"
-        echo -e "\tbgzip:"
-        echo -e "\t\tversion: \$(bgzip --version 2>&1 | grep 'bgzip' | sed 's/.* //g')"
-        echo -e "\t\tcontainer: ${task.container}"
-        echo -e "\ttabix:"
-        echo -e "\t\tversion: \$(tabix --version 2>&1 | grep 'tabix' | sed 's/.* //g')"
-        echo -e "\t\tcontainer: ${task.container}"
-    } > "${group}.${processName}.versions.yaml"
-    """
+        """
+        touch ${group}.sentieon.haplotypes.vcf.gz ${group}.sentieon.haplotypes.vcf.gz.tbi
+
+        cat <<-END_VERSIONS > versions.yml
+        "${task.process}":
+            gatk4: \$(echo \$(gatk --version 2>&1) | sed 's/^.*(GATK) v//; s/ .*\$//')
+            bgzip: \$(bgzip --v | grep 'bgzip' | sed 's/.* //g')
+            tabix: \$(echo \$(tabix -h 2>&1) | sed 's/^.*Version: //; s/ .*\$//')
+        END_VERSIONS
+        """
 }
 
 
@@ -101,46 +83,31 @@ process SENTIEON_HAPLOTYPING {
 
     output:
         tuple val(group), file("${group}.sentieon.haplotypes.vcf.gz"), file("${group}.sentieon.haplotypes.vcf.gz.tbi"), emit: haplotypes
-        tuple val(group), file("${group}.${task.process.split(':').last()}.versions.yaml"), emit: versions
+        path "versions.yml",                                                                                            emit: versions
         
     script:
-    def processName = task.process.toString().split(':').last()
-    """
-    sentieon driver -t ${task.cpus} -r $params.genome_file -i $bam --algo Haplotyper --emit_mode confident ${group}.sentieon.haplotypes.vcf
-    bgzip -c ${group}.sentieon.haplotypes.vcf > ${group}.sentieon.haplotypes.vcf.gz
-    tabix ${group}.sentieon.haplotypes.vcf.gz
+        """
+        sentieon driver -t ${task.cpus} -r $params.genome_file -i $bam --algo Haplotyper --emit_mode confident ${group}.sentieon.haplotypes.vcf
+        bgzip -c ${group}.sentieon.haplotypes.vcf > ${group}.sentieon.haplotypes.vcf.gz
+        tabix ${group}.sentieon.haplotypes.vcf.gz
 
-    {
-        echo -e "${processName}:"
-        echo -e "\tSentieon Haplotyper:"
-        echo -e "\t\tversion: \$(sentieon driver --version 2>&1 | sed -e 's/sentieon-genomics-//g')"
-        echo -e "\t\tcontainer: ${task.container}"
-        echo -e "\tbgzip:"
-        echo -e "\t\tversion: \$(bgzip --version 2>&1 | grep 'bgzip' | sed 's/.* //g')"
-        echo -e "\t\tcontainer: ${task.container}"
-        echo -e "\ttabix:"
-        echo -e "\t\tversion: \$(tabix --version 2>&1 | grep 'tabix' | sed 's/.* //g')"
-        echo -e "\t\tcontainer: ${task.container}"
-    } > "${group}.${processName}.versions.yaml"
-
-    """
+        cat <<-END_VERSIONS > versions.yml
+        "${task.process}":
+            sentieon: \$(echo \$(sentieon driver --version 2>&1) | sed -e "s/sentieon-genomics-//g")
+            bgzip: \$(bgzip --v | grep 'bgzip' | sed 's/.* //g')
+            tabix: \$(echo \$(tabix -h 2>&1) | sed 's/^.*Version: //; s/ .*\$//')
+        END_VERSIONS
+        """
 
     stub:
-    def processName = task.process.toString().split(':').last()
-    """
-    touch ${group}.sentieon.haplotypes.vcf.gz ${group}.sentieon.haplotypes.vcf.gz.tbi
-    {
-        echo -e "${processName}:"
-        echo -e "\tSentieon Haplotyper:"
-        echo -e "\t\tversion: \$(sentieon driver --version 2>&1 | sed -e 's/sentieon-genomics-//g')"
-        echo -e "\t\tcontainer: ${task.container}"
-        echo -e "\tbgzip:"
-        echo -e "\t\tversion: \$(bgzip --version 2>&1 | grep 'bgzip' | sed 's/.* //g')"
-        echo -e "\t\tcontainer: ${task.container}"
-        echo -e "\ttabix:"
-        echo -e "\t\tversion: \$(tabix --version 2>&1 | grep 'tabix' | sed 's/.* //g')"
-        echo -e "\t\tcontainer: ${task.container}"
-    } > "${group}.${processName}.versions.yaml"
-    """
+        """
+        touch ${group}.sentieon.haplotypes.vcf.gz ${group}.sentieon.haplotypes.vcf.gz.tbi
 
+        cat <<-END_VERSIONS > versions.yml
+        "${task.process}":
+            sentieon: \$(echo \$(sentieon driver --version 2>&1) | sed -e "s/sentieon-genomics-//g")
+            bgzip: \$(bgzip --v | grep 'bgzip' | sed 's/.* //g')
+            tabix: \$(echo \$(tabix -h 2>&1) | sed 's/^.*Version: //; s/ .*\$//')
+        END_VERSIONS
+        """
 }

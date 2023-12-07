@@ -7,36 +7,29 @@ process BCFTOOLS_ANNOTATION {
         tuple val(group), file(vcf), file(tbi)
 
     output:
-        tuple val(group), file("${group}.sentieon.haplotypes.anno.vcf"), emit: annotations
-        tuple val(group), file("${group}.${task.process.split(':').last()}.versions.yaml"), emit: versions
+        tuple val(group), file("${group}.sentieon.haplotypes.anno.vcf"),    emit: annotations
+        path "versions.yml",                                                emit: versions
 
     when:
         task.ext.when == null || task.ext.when
 
     script:
-    def processName = task.process.toString().split(':').last()
-    """
-    bcftools annotate --threads ${task.cpus} -a $params.dbSNP -c ID -o ${group}".sentieon.haplotypes.anno.vcf" $vcf
+        """
+        bcftools annotate --threads ${task.cpus} -a $params.dbSNP -c ID -o ${group}".sentieon.haplotypes.anno.vcf" $vcf
 
-    {
-    echo -e "${processName}:"
-    echo -e "\tBCFTools:"
-    echo -e "\t\tversion: \$(bcftools --version | grep 'bcftools' 2>&1 | sed 's/^.*bcftools //')"
-    echo -e "\t\tcontainer: ${task.container}"
-    } > "${group}.${processName}.versions.yaml"
-
-    """
+        cat <<-END_VERSIONS > versions.yml
+        "${task.process}":
+            bcftools: \$(bcftools --version | grep 'bcftools' 2>&1 | sed 's/^.*bcftools //')
+        END_VERSIONS
+        """
 
     stub:
-    def processName = task.process.toString().split(':').last()
-    """
-    touch ${group}".sentieon.haplotypes.anno.vcf"
+        """
+        touch ${group}".sentieon.haplotypes.anno.vcf"
 
-    {
-    echo -e "${processName}:"
-    echo -e "\tBCFTools:"
-    echo -e "\t\tversion: \$(bcftools --version | grep 'bcftools' 2>&1 | sed 's/^.*bcftools //')"
-    echo -e "\t\tcontainer: ${task.container}"
-    } > "${group}.${processName}.versions.yaml"
-    """
+        cat <<-END_VERSIONS > versions.yml
+        "${task.process}":
+            bcftools: \$(bcftools --version | grep 'bcftools' 2>&1 | sed 's/^.*bcftools //')
+        END_VERSIONS
+        """
 }
