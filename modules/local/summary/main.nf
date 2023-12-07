@@ -48,7 +48,7 @@ process DEPTH_OF_TARGETS {
 	script:
 	def processName = task.process.toString().split(':').last()
 	"""
-    java -jar /usr/GenomeAnalysisTK.jar -T DepthOfCoverage -R $params.genome_file -I $ontarget_bam -o ${group}.pgx_depth_at_missing.gdf -L $target_interval_list
+    java -jar /usr/GenomeAnalysisTK.jar -T DepthOfCoverage -allowPotentiallyMisencodedQuals -R $params.genome_file -I $ontarget_bam -o ${group}.pgx_depth_at_missing.gdf -L $target_interval_list
 
 	{
 		echo -e "${processName}:"
@@ -123,7 +123,7 @@ process DEPTH_OF_BAITS {
 	def processName = task.process.toString().split(':').last()
 	"""
 	# NOTE: does not work with openjdk-11, openjdk-8 works
-	java -jar /usr/GenomeAnalysisTK.jar -T DepthOfCoverage -R $params.genome_file -I $ontarget_bam -o ${group}.pgx.gdf -L $padded_baits_interval_list
+	java -jar /usr/GenomeAnalysisTK.jar -T DepthOfCoverage -allowPotentiallyMisencodedQuals -R $params.genome_file -I $ontarget_bam -o ${group}.pgx.gdf -L $padded_baits_interval_list
 
 	{
 		echo -e "${processName}:"
@@ -149,7 +149,7 @@ process DEPTH_OF_BAITS {
 }
 
 process PADDED_BED_INTERVALS {
-	publishDir "${params.outdir}/${params.subdir}/bam/", mode: 'copy', overwrite: true, pattern: "*.gdf"
+	publishDir "${params.outdir}/${params.subdir}/bam/", mode: 'copy', overwrite: true, pattern: "*.bed"
 	cpus 1
 	time '1h'
 	tag "pgx_bed_padded_intervals"

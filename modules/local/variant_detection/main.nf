@@ -1,5 +1,5 @@
 process DETECTED_VARIANTS {
-	publishDir "${params.outdir}/${params.subdir}/report/detected_variants", mode: 'copy', overwrite: true, pattern: "*.csv"
+	publishDir "${params.outdir}/${params.subdir}/report/detected_variants", mode: 'copy', overwrite: true, pattern: "*.tsv"
 	cpus 1
 	time '0.5h'
 	tag "$group"
