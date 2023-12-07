@@ -1,29 +1,25 @@
 process DETECTED_VARIANTS {
-	publishDir "${params.outdir}/${params.subdir}/report/detected_variants", mode: 'copy', overwrite: true, pattern: "*.tsv"
-	cpus 1
-	time '0.5h'
-	tag "$group"
-	stageInMode 'copy'
-	stageOutMode 'copy'
-	container = "${params.python_image}"
+    label 'process_single'
+    label 'stage'
+    tag "$group"
 
-	input:
-		tuple val(group), file(vcf), file(pgx_ontarget_rsids_bed)
-		
-	output:
-		tuple val(group), file("${group}.detected_variants.tsv"), emit: detected_tsv
+    input:
+        tuple val(group), file(vcf), file(pgx_ontarget_rsids_bed)
+        
+    output:
+        tuple val(group), file("${group}.detected_variants.tsv"), emit: detected_tsv
 
-	script:
-	"""
+    script:
+    """
     get_target_variants.py \
         --target_bed $pgx_ontarget_rsids_bed \
         --vcf $vcf \
         --output ${group}.detected_variants.tsv \
-		--addchr $params.addchr
-	"""
+        --addchr $params.addchr
+    """
 
-	stub:
-	"""
-	touch ${group}.detected_variants.tsv
-	"""
+    stub:
+    """
+    touch ${group}.detected_variants.tsv
+    """
 }
