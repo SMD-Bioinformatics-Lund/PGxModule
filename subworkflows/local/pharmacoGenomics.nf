@@ -1,15 +1,8 @@
 #!/usr/bin/env nextflow
 
-if (params.haplotyper == 'GATK') {
-
-    include { GATK_HAPLOTYPING as HAPLOTYPER   } from '../../modules/local/ontarget/main'
-
-} else if (params.haplotyper == 'SENTIEON') {
-
-    include { SENTIEON_HAPLOTYPING as HAPLOTYPER  } from '../../modules/local/ontarget/main'
-}
-
 include { ONTARGET_BAM                          } from '../../modules/local/ontarget/main'
+include { GATK_HAPLOTYPING                      } from '../../modules/local/ontarget/main'
+include { SENTIEON_HAPLOTYPING                  } from '../../modules/local/ontarget/main'
 include { BCFTOOLS_ANNOTATION                   } from '../../modules/local/annotation/main'
 include { VARIANT_FILTRATION                    } from '../../modules/local/filtration/main'
 include { DETECTED_VARIANTS                     } from '../../modules/local/variant_detection/main'
@@ -22,39 +15,93 @@ include { PADDED_BED_INTERVALS                  } from '../../modules/local/summ
 include { GET_CLIINICAL_GUIDELINES              } from '../../modules/local/pgx_report/main'
 include { GET_INTERACTION_GUIDELINES            } from '../../modules/local/pgx_report/main'
 include { GET_PGX_REPORT                        } from '../../modules/local/pgx_report/main'
-include { DUMPSOFTWAREVERSIONS                  } from '../../modules/local/dumpsoftwareversions/main'
 
 workflow PHARMACO_GENOMICS {
 
-    take: 
-        bam_input
-        pgx_targets_bed
-        pgx_target_rsids
-    
+    take:
+        bam_input             // channel: [ tuple val(meta) file(".bam") file(".bai") ]
+
     main:
-        PADDED_BED_INTERVALS ( pgx_targets_bed )
-        GET_PADDED_BAITS ( pgx_targets_bed )
-        ONTARGET_BAM ( bam_input.combine(PADDED_BED_INTERVALS.out.padded_bed_intervals) )
-        HAPLOTYPER ( ONTARGET_BAM.out.bam_ontarget )
-        BCFTOOLS_ANNOTATION ( HAPLOTYPER.out.haplotypes )
+        ch_versions = Channel.empty()
+
+        // Get the padded bed intervals
+        PADDED_BED_INTERVALS ()
+        ch_versions = ch_versions.mix(PADDED_BED_INTERVALS.out.versions)
+
+        // Get the padded baits
+        GET_PADDED_BAITS ()
+        ch_versions = ch_versions.mix(GET_PADDED_BAITS.out.versions)
+
+        // Get the on-target bam file
+        ONTARGET_BAM ( 
+            bam_input, 
+            PADDED_BED_INTERVALS.out.padded_bed_intervals 
+        )
+        ch_versions = ch_versions.mix(ONTARGET_BAM.out.versions)
+
+        // Runs only when the haplotype caller is GATK
+        GATK_HAPLOTYPING ( ONTARGET_BAM.out.bam_ontarget )
+
+        // Runs only when the haplotype caller is SENTIEON
+        SENTIEON_HAPLOTYPING ( ONTARGET_BAM.out.bam_ontarget )
+
+        ch_haplotypes = Channel.empty().mix(GATK_HAPLOTYPING.out.haplotypes, SENTIEON_HAPLOTYPING.out.haplotypes)
+        ch_versions   = Channel.empty().mix(GATK_HAPLOTYPING.out.versions, SENTIEON_HAPLOTYPING.out.versions)
+
+        // Annotate the haplotypes
+        BCFTOOLS_ANNOTATION ( ch_haplotypes )
+        ch_versions = ch_versions.mix(BCFTOOLS_ANNOTATION.out.versions)
+
+        // Filter the haplotypes
         VARIANT_FILTRATION ( BCFTOOLS_ANNOTATION.out.annotations )        
-        DETECTED_VARIANTS ( VARIANT_FILTRATION.out.haplotypes_filtered.combine(pgx_target_rsids) )
-        SAMPLE_TARGET_LIST ( DETECTED_VARIANTS.out.detected_tsv.combine(pgx_target_rsids) )
-        DEPTH_OF_TARGETS ( ONTARGET_BAM.out.bam_ontarget.join(SAMPLE_TARGET_LIST.out.pgx_target_interval_list) )
-        DEPTH_OF_BAITS ( ONTARGET_BAM.out.bam_ontarget.combine(GET_PADDED_BAITS.out.padded_baits_list) )
-        APPEND_ID_TO_GDF ( DEPTH_OF_TARGETS.out.pgx_depth_at_missing.combine(pgx_target_rsids) )
+        ch_versions = ch_versions.mix(VARIANT_FILTRATION.out.versions)
+
+        // Detect the variants from the target list
+        DETECTED_VARIANTS ( VARIANT_FILTRATION.out.haplotypes_filtered )
+        ch_versions = ch_versions.mix(DETECTED_VARIANTS.out.versions)
+
+        // Get the sample target list
+        SAMPLE_TARGET_LIST ( DETECTED_VARIANTS.out.detected_tsv )
+        ch_versions = ch_versions.mix(SAMPLE_TARGET_LIST.out.versions)
+
+        // Get the depth of targets
+        DEPTH_OF_TARGETS ( 
+            ONTARGET_BAM.out.bam_ontarget
+            .join( SAMPLE_TARGET_LIST.out.pgx_target_interval_list, by: [0,1] ) 
+        )
+        ch_versions = ch_versions.mix(DEPTH_OF_TARGETS.out.versions)
+
+        // Get the depth of baits
+        DEPTH_OF_BAITS ( 
+            ONTARGET_BAM.out.bam_ontarget, 
+            GET_PADDED_BAITS.out.padded_baits_list 
+        )
+        ch_versions = ch_versions.mix(DEPTH_OF_BAITS.out.versions)
+
+        // Append the id to the gdf
+        APPEND_ID_TO_GDF ( DEPTH_OF_TARGETS.out.pgx_depth_at_missing )
+        ch_versions = ch_versions.mix(APPEND_ID_TO_GDF.out.versions)
+
+        // Get the clinical guidelines
         GET_CLIINICAL_GUIDELINES ( DETECTED_VARIANTS.out.detected_tsv )
+        ch_versions = ch_versions.mix(GET_CLIINICAL_GUIDELINES.out.versions)
+
+        // Get the interaction guidelines
         GET_INTERACTION_GUIDELINES ( GET_CLIINICAL_GUIDELINES.out.possible_diplotypes )
-        GET_PGX_REPORT ( VARIANT_FILTRATION.out.haplotypes_filtered.join(DETECTED_VARIANTS.out.detected_tsv).join(APPEND_ID_TO_GDF.out.depth_at_missing_annotate_gdf).join( GET_CLIINICAL_GUIDELINES.out.possible_diplotypes).join(DEPTH_OF_BAITS.out.padded_baits_list).join(GET_INTERACTION_GUIDELINES.out.possible_interactions).combine(pgx_targets_bed).combine(pgx_target_rsids) )
+        ch_versions = ch_versions.mix(GET_INTERACTION_GUIDELINES.out.versions)
 
-        DUMPSOFTWAREVERSIONS (ONTARGET_BAM.out.versions.join(
-                                            HAPLOTYPER.out.versions).join(
-                                            BCFTOOLS_ANNOTATION.out.versions).join(
-                                            DEPTH_OF_TARGETS.out.versions).join(
-                                            DEPTH_OF_BAITS.out.versions)
-                                            )
+        // Get the PGx report
+        GET_PGX_REPORT ( 
+            VARIANT_FILTRATION.out.haplotypes_filtered
+            .join( DETECTED_VARIANTS.out.detected_tsv, by: [0,1])
+            .join( APPEND_ID_TO_GDF.out.depth_at_missing_annotate_gdf, by: [0,1] )
+            .join( GET_CLIINICAL_GUIDELINES.out.possible_diplotypes, by: [0,1] )
+            .join( DEPTH_OF_BAITS.out.padded_baits_list, by: [0,1] )
+            .join( GET_INTERACTION_GUIDELINES.out.possible_interactions, by: [0,1] )
+        )
+        ch_versions = ch_versions.mix(GET_PGX_REPORT.out.versions)
+
     emit:
-        pgx_report = GET_PGX_REPORT.out.pgx_html
-        versions   = DUMPSOFTWAREVERSIONS.out.versions_yml   // channel: [ path(versions.yml) ]
-
+        pgx_report = GET_PGX_REPORT.out.pgx_html    // channel: [ tuple val(group), val(meta) file("pgx.html") ]
+        versions   = ch_versions                    // channel: [ path(versions.yml) ]
 }
