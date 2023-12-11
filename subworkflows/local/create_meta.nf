@@ -20,20 +20,19 @@ workflow CHECK_INPUT {
 
 }
 
-// Function to get list of [ meta, [ fastq_1, fastq_2 ] ]
+// Function to get list of [ meta, [ bam, bai ] ]
 def create_bam_channel(LinkedHashMap row) {
 	// create meta map
 	def meta = [:]
-	meta.id					= row.id
 	meta.group              = row.group
+	meta.id					= row.id
 	meta.type               = row.type
 	meta.clarity_sample_id  = (row.containsKey("clarity_sample_id") ? row.clarity_sample_id : None)
 	meta.ffpe               = (row.containsKey("ffpe") ? row.ffpe : false)
 	meta.purity             = (row.containsKey("purity") ? row.purity : false)
-	// add path(s) of the fastq file(s) to the meta map
+	// add path(s) of the bam file(s) to the meta map
 	def bam_meta = []
-	// bam_meta = [row.group, row.id, meta, file(row.bam), file(row.bai) ]
-	bam_meta = [row.group, row.id, row.type, file(row.bam), file(row.bai) ]
+	bam_meta = [row.group, meta, file(row.bam), file(row.bai) ]
 
 	return bam_meta
 }

@@ -1,22 +1,26 @@
 process VARIANT_FILTRATION {
     label 'process_single'
     label 'stage'
-    tag "$group"
+    tag "$meta.group"
 
     input:
-        tuple val(group), file(vcf)
+        tuple val(group), val(meta), file(vcf)
 
     output:
-        tuple val(group), file("${group}.haplotypes.filtered.annotated.vcf"),   emit: haplotypes_filtered
-        path "versions.yml",                                                    emit: versions
-        
+        tuple val(group), val(meta), file("*.filtered.vcf"),    emit: haplotypes_filtered
+        path "versions.yml",                                    emit: versions
+
+    when:
+        task.ext.when == null || task.ext.when
+
     script:
+        def args    = task.ext.args   ?: ''
+        def prefix  = task.ext.prefix ?: "${meta.group}"
         """
         variant_filtration.py \
             --input_vcf=$vcf \
-            --read_ratio=$params.read_ratio \
-            --depth=$params.DP \
-            --output_file=${group}.haplotypes.filtered.annotated.vcf
+            $args \
+            --output_file=${prefix}.haplotypes.anno.filtered.vcf
 
         cat <<-END_VERSIONS > versions.yml
         "${task.process}":
@@ -25,8 +29,9 @@ process VARIANT_FILTRATION {
         """
 
     stub:
+        def prefix  = task.ext.prefix ?: "${meta.group}"
         """
-        touch ${group}.haplotypes.filtered.annotated.vcf
+        touch ${prefix}.haplotypes.anno.filtered.vcf
 
         cat <<-END_VERSIONS > versions.yml
         "${task.process}":

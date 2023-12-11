@@ -1,19 +1,25 @@
 process ONTARGET_BAM {
     label 'process_low'
     label 'stage'
-    tag "$group"
+    tag "$meta.group"
 
     input:
-        tuple val(group), val(id), val(type), file(bam), file(bai), file(pgx_ontarget_padded_bed)
+        tuple val(group), val(meta), file(bam), file(bai) 
+        path pgx_ontarget_padded_bed
 
     output:
-        tuple val(group), file("${group}.dedup.ontarget.pgx.bam"), file("${group}.dedup.ontarget.pgx.bam.bai"), emit: bam_ontarget
+        tuple val(group),  val(meta), file("*.dedup.ontarget.pgx.bam"), file("*.dedup.ontarget.pgx.bam.bai"),   emit: bam_ontarget
         path "versions.yml",                                                                                    emit: versions
 
+    when:
+        task.ext.when == null || task.ext.when
+
     script:
+        def args    = task.ext.args   ?: ''
+        def prefix  = task.ext.prefix ?: "${meta.group}"
         """
-        samtools view -h -b $bam -L $pgx_ontarget_padded_bed -M > ${group}.dedup.ontarget.pgx.bam
-        samtools index ${group}.dedup.ontarget.pgx.bam
+        samtools view $args -b $bam -L $pgx_ontarget_padded_bed > ${prefix}.dedup.ontarget.pgx.bam
+        samtools index ${prefix}.dedup.ontarget.pgx.bam
 
         cat <<-END_VERSIONS > versions.yml
         "${task.process}":
@@ -22,8 +28,9 @@ process ONTARGET_BAM {
         """
 
     stub:
+        def prefix  = task.ext.prefix ?: "${meta.group}"
         """
-        touch ${group}.dedup.ontarget.pgx.bam ${group}.dedup.ontarget.pgx.bam.bai
+        touch ${prefix}.dedup.ontarget.pgx.bam ${prefix}.dedup.ontarget.pgx.bam.bai
 
         cat <<-END_VERSIONS > versions.yml
         "${task.process}":
@@ -36,20 +43,31 @@ process ONTARGET_BAM {
 process GATK_HAPLOTYPING {
     label 'process_high'
     label 'stage'
-    tag "$group"
+    tag "$meta.group"
 
     input:
-        tuple val(group), file(bam), file(bai)
+        tuple val(group), val(meta), file(bam), file(bai)
 
     output:
-        tuple val(group), file("${group}.GATK.haplotypes.vcf.gz"), file("${group}.GATK.haplotypes.vcf.gz.tbi"), emit: haplotypes
-        path "versions.yml",                                                                                    emit: versions
+        tuple val(group), val(meta), file("*.haplotypes.vcf.gz"), file("*.haplotypes.vcf.gz.tbi"),  emit: haplotypes
+        path "versions.yml",                                                                        emit: versions
+
+    when:
+        task.ext.when == null || task.ext.when
 
     script:
+        def args        = task.ext.args   ?: ''
+        def prefix      = task.ext.prefix ?: "${meta.group}.GATK"
+        def avail_mem   = 12288
+        if (!task.memory) {
+            log.info '[GATK CollectAllelicCounts] Available memory not known - defaulting to 12GB. Specify process memory requirements to change this.'
+        } else {
+            avail_mem = (task.memory.mega*0.8).intValue()
+        }
         """
-        gatk HaplotypeCaller -R $params.genome_file -I $bam -O ${group}.GATK.haplotypes.vcf
-        bgzip -c ${group}.sentieon.haplotypes.vcf > ${group}.sentieon.haplotypes.vcf.gz
-        tabix ${group}.sentieon.haplotypes.vcf.gz
+        gatk --java-options "-Xmx${avail_mem}M" HaplotypeCaller $args -I $bam -O ${prefix}.haplotypes.vcf
+        bgzip -c ${prefix}.haplotypes.vcf > ${prefix}.haplotypes.vcf.gz
+        tabix ${prefix}.haplotypes.vcf.gz
 
         cat <<-END_VERSIONS > versions.yml
         "${task.process}":
@@ -60,8 +78,9 @@ process GATK_HAPLOTYPING {
         """
 
     stub:
+        def prefix      = task.ext.prefix ?: "${meta.group}.GATK"
         """
-        touch ${group}.sentieon.haplotypes.vcf.gz ${group}.sentieon.haplotypes.vcf.gz.tbi
+        touch ${prefix}.haplotypes.vcf.gz ${prefix}.haplotypes.vcf.gz.tbi
 
         cat <<-END_VERSIONS > versions.yml
         "${task.process}":
@@ -76,20 +95,26 @@ process GATK_HAPLOTYPING {
 process SENTIEON_HAPLOTYPING {
     label 'process_high'
     label 'stage'
-    tag "$group"
+    tag "$meta.group"
 
     input:
-        tuple val(group), file(bam), file(bai)
+        tuple val(group), val(meta), file(bam), file(bai)
 
     output:
-        tuple val(group), file("${group}.sentieon.haplotypes.vcf.gz"), file("${group}.sentieon.haplotypes.vcf.gz.tbi"), emit: haplotypes
-        path "versions.yml",                                                                                            emit: versions
-        
+        tuple val(group), val(meta), file("*.haplotypes.vcf.gz"), file("*.haplotypes.vcf.gz.tbi"),  emit: haplotypes
+        path "versions.yml",                                                                        emit: versions
+
+    when:
+        task.ext.when == null || task.ext.when
+
     script:
+        def args        = task.ext.args   ?: ''
+        def args2       = task.ext.args2  ?: ''
+        def prefix      = task.ext.prefix ?: "${meta.group}.sentieon"
         """
-        sentieon driver -t ${task.cpus} -r $params.genome_file -i $bam --algo Haplotyper --emit_mode confident ${group}.sentieon.haplotypes.vcf
-        bgzip -c ${group}.sentieon.haplotypes.vcf > ${group}.sentieon.haplotypes.vcf.gz
-        tabix ${group}.sentieon.haplotypes.vcf.gz
+        sentieon driver -t ${task.cpus} $args -i $bam --algo Haplotyper $args2 ${prefix}.haplotypes.vcf
+        bgzip -c ${prefix}.haplotypes.vcf > ${prefix}.haplotypes.vcf.gz
+        tabix ${prefix}.haplotypes.vcf.gz
 
         cat <<-END_VERSIONS > versions.yml
         "${task.process}":
@@ -100,8 +125,9 @@ process SENTIEON_HAPLOTYPING {
         """
 
     stub:
+        def prefix = task.ext.prefix ?: "${meta.group}.sentieon"
         """
-        touch ${group}.sentieon.haplotypes.vcf.gz ${group}.sentieon.haplotypes.vcf.gz.tbi
+        touch ${prefix}.haplotypes.vcf.gz ${prefix}.haplotypes.vcf.gz.tbi
 
         cat <<-END_VERSIONS > versions.yml
         "${task.process}":

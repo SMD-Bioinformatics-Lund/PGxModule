@@ -3,7 +3,7 @@ process CUSTOM_DUMPSOFTWAREVERSIONS {
 
     input:
         path versions
-        tuple val(group), val(meta)
+        val (samples)
 
     output:
         path "*.software_versions.yml"    , emit: yml
@@ -15,7 +15,6 @@ process CUSTOM_DUMPSOFTWAREVERSIONS {
 
     script:
         def args    = task.ext.args ?: ''
-        prefix      = task.ext.prefix ?: "${meta.group}"
+        prefix      = task.ext.prefix ?: "${samples}"
         template 'dumpsoftwareversions.py'
-
 }

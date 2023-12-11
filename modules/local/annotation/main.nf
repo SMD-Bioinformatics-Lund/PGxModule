@@ -1,21 +1,23 @@
 process BCFTOOLS_ANNOTATION {
     label 'process_very_high'
     label 'stage'
-    tag "$group"
+    tag "$meta.group"
 
     input:
-        tuple val(group), file(vcf), file(tbi)
+        tuple val(group), val(meta), file(vcf), file(tbi)
 
     output:
-        tuple val(group), file("${group}.sentieon.haplotypes.anno.vcf"),    emit: annotations
-        path "versions.yml",                                                emit: versions
+        tuple val(group), val(meta), file("*.haplotypes.anno.vcf"), emit: annotations
+        path "versions.yml",                                        emit: versions
 
     when:
         task.ext.when == null || task.ext.when
 
     script:
+        def args    = task.ext.args   ?: ''
+        def prefix  = task.ext.prefix ?: "${meta.group}"
         """
-        bcftools annotate --threads ${task.cpus} -a $params.dbSNP -c ID -o ${group}".sentieon.haplotypes.anno.vcf" $vcf
+        bcftools annotate --threads ${task.cpus} $args -o ${prefix}".haplotypes.anno.vcf" $vcf
 
         cat <<-END_VERSIONS > versions.yml
         "${task.process}":
@@ -24,8 +26,9 @@ process BCFTOOLS_ANNOTATION {
         """
 
     stub:
+        def prefix  = task.ext.prefix ?: "${meta.group}"
         """
-        touch ${group}".sentieon.haplotypes.anno.vcf"
+        touch ${prefix}".haplotypes.anno.vcf"
 
         cat <<-END_VERSIONS > versions.yml
         "${task.process}":

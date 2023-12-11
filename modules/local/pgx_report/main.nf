@@ -2,24 +2,26 @@ process GET_CLIINICAL_GUIDELINES {
     // Given detected variants, get possible Haplotype combinations
     label 'process_single'
     label 'stage'
-    tag "$group"
+    tag "$meta.group"
 
     input:
-        tuple val(group), file(detected_variants)
+        tuple val(group), val(meta), file(detected_variants)
 
     output:
-        tuple val(group), file("${group}.possible_diplotypes.tsv"), emit: possible_diplotypes
-        path "versions.yml",                                        emit: versions
+        tuple val(group), val(meta), file("*.possible_diplotypes.tsv"), emit: possible_diplotypes
+        path "versions.yml",                                            emit: versions
+
+    when:
+        task.ext.when == null || task.ext.when
 
     script:
+        def args    = task.ext.args   ?: ''
+        def prefix  = task.ext.prefix ?: "${meta.group}"
         """
         get_possible_diplotypes.py \
             --variant_csv $detected_variants \
-            --haplotype_definitions $params.haplotype_definitions \
-            --clinical_guidelines $params.clinical_guidelines \
-            --haplotype_activity $params.haplotype_activity \
-            --output ${group}.possible_diplotypes.tsv \
-            --hidden_haplotypes $params.hidden_haplotypes
+            --output ${prefix}.possible_diplotypes.tsv  \
+            $args
 
         cat <<-END_VERSIONS > versions.yml
         "${task.process}":
@@ -28,8 +30,9 @@ process GET_CLIINICAL_GUIDELINES {
         """
 
     stub:
+        def prefix  = task.ext.prefix ?: "${meta.group}"
         """
-        touch ${group}.possible_diplotypes.tsv
+        touch ${prefix}.possible_diplotypes.tsv
 
         cat <<-END_VERSIONS > versions.yml
         "${task.process}":
@@ -42,21 +45,26 @@ process GET_INTERACTION_GUIDELINES {
     // Given Haplotype Combinations, get possible interactions betweens these
     label 'process_single'
     label 'stage'
-    tag "$group"
+    tag "$meta.group"
 
     input:
-        tuple val(group), file(possible_diplotypes)
+        tuple val(group), val(meta), file(possible_diplotypes)
 
     output:
-        tuple val(group), file("${group}.possible_interactions.tsv"),   emit: possible_interactions
-        path "versions.yml",                                            emit: versions
+        tuple val(group), val(meta), file("*.possible_interactions.tsv"),   emit: possible_interactions
+        path "versions.yml",                                                emit: versions
+
+    when:
+        task.ext.when == null || task.ext.when
 
     script:
+        def args    = task.ext.args   ?: ''
+        def prefix  = task.ext.prefix ?: "${meta.group}"
         """
         get_interaction_guidelines.py \
             --diploids $possible_diplotypes \
-            --interaction_guidelines $params.interacting_guidelines \
-            --output ${group}.possible_interactions.tsv
+            --output ${prefix}.possible_interactions.tsv \
+            $args
 
         cat <<-END_VERSIONS > versions.yml
         "${task.process}":
@@ -65,8 +73,9 @@ process GET_INTERACTION_GUIDELINES {
         """
 
     stub:
+        def prefix  = task.ext.prefix ?: "${meta.group}"
         """
-        touch ${group}.possible_interactions.tsv
+        touch ${prefix}.possible_interactions.tsv
 
         cat <<-END_VERSIONS > versions.yml
         "${task.process}":
@@ -79,33 +88,32 @@ process GET_PGX_REPORT {
     // Generates markdown report per sample
     label 'process_single'
     label 'stage'
-    tag "$group"
+    tag "$meta.group"
     
     input:
-        tuple val(group), file(annotated_vcf), file(detected_variants), file(depth_at_missing_annotated_gdf), file(possible_diplotypes), file(depth_at_padded_baits), file(possible_interactions), file(target_bed), file(target_rsids)
+        tuple val(group), val(meta), file(annotated_vcf), file(detected_variants), file(depth_at_missing_annotated_gdf), file(possible_diplotypes), file(depth_at_padded_baits), file(possible_interactions)
 
     output:
-        tuple val(group), file("${group}.pgx.html"),    emit: pgx_html
+        tuple val(group), val(meta), file("*.pgx.html"), emit: pgx_html
         path "versions.yml",                            emit: versions
 
+    when:
+        task.ext.when == null || task.ext.when
+
     script:
+        def args    = task.ext.args   ?: ''
+        def prefix  = task.ext.prefix ?: "${meta.group}"
         """
         create_report.py \
             --group $group \
-            --read_depth $params.DP \
             --detected_variants $detected_variants \
             --missing_annotated_depth $depth_at_missing_annotated_gdf \
-            --haplotype_definitions $params.haplotype_definitions \
             --possible_diplotypes $possible_diplotypes \
             --possible_interactions $possible_interactions \
-            --target_bed $target_bed \
             --padded_baits_depth $depth_at_padded_baits \
-            --target_rsids $target_rsids \
             --annotated_vcf $annotated_vcf \
-            --dbSNP_version $params.dbSNP_version \
-            --genome_version $params.ref_version \
-            --output ${group}.pgx.html \
-            --report_template $params.report_template 
+            --output ${prefix}.pgx.html \
+            $args
 
         cat <<-END_VERSIONS > versions.yml
         "${task.process}":
@@ -114,8 +122,9 @@ process GET_PGX_REPORT {
         """
 
     stub:
+        def prefix  = task.ext.prefix ?: "${meta.group}"
         """
-        touch ${group}.pgx.html
+        touch ${prefix}.pgx.html
 
         cat <<-END_VERSIONS > versions.yml
         "${task.process}":
