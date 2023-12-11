@@ -108,3 +108,8 @@ If using Nextflow secrets, set the environment variable NXF_ENABLE_SECRETS to tr
 ```bash
 nextflow run main.nf --csv /path/to/csv/input.csv -profile "panel,hg38,solid" --haplotype_caller SENTIEON |& tee logs/run.log
 ```
+
+## Workflow Image  
+
+<img src="resources/workflow_images/PGx.png" alt="Workflow Image" width="50%">
+
