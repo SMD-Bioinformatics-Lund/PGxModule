@@ -262,6 +262,10 @@ class Report(UtilityFunctions):
             processed_targets_depth_df["Read Depth"], errors="coerce"
         )
 
+        processed_targets_depth_df.to_csv(
+            f"{self.group}.targets.depth.tsv", sep="\t", index=False
+        )
+
         # Return only the targets with below the depth
         low_depth_targets = processed_targets_depth_df[
             processed_targets_depth_df["Read Depth"] < read_depth_threshold
