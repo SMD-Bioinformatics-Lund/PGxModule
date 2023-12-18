@@ -9,6 +9,7 @@ custom_logo_title: "Centrum för molekylär diagnostik (CMD)"
 
 
 report_header_info:
+    - Sample ID: "REPLACE_SAMPLE_ID"
     - Application Type: "Pharmacogenomics (PGx)"
     - Gene Panel: "PGx Panel"
     - Targets Screend: "TPMT, DPYD, NUDT15 - 19 SNPS"
@@ -21,7 +22,6 @@ report_header_info:
 report_section_order:
     software_versions:
         order: -1000
-
 
 
 custom_content:

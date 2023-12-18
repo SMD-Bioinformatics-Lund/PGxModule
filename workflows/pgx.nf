@@ -48,14 +48,14 @@ workflow PGX {
 
         ch_multiqc_files    = Channel.empty()
         ch_multiqc_files    = ch_multiqc_files.mix(CUSTOM_DUMPSOFTWAREVERSIONS.out.mqc_yml.collect())
-        ch_multiqc_files    = ch_multiqc_files.mix(PHARMACO_GENOMICS.out.targets_depth.map{it[2]}.collect().ifEmpty([]))
+        // ch_multiqc_files    = ch_multiqc_files.mix(PHARMACO_GENOMICS.out.targets_depth.map{it[2]}.collect().ifEmpty([]))
 
         MULTIQC (
             ch_multiqc_files.collect(),
             ch_multiqc_config.toList(),
             ch_multiqc_custom_config.toList(),
             ch_multiqc_logo.toList(),
-            samples
+            PHARMACO_GENOMICS.out.targets_depth
         )
         multiqc_reports = MULTIQC.out.report.toList()
 
