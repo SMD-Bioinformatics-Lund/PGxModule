@@ -94,8 +94,9 @@ process GET_PGX_REPORT {
         tuple val(group), val(meta), file(annotated_vcf), file(detected_variants), file(depth_at_missing_annotated_gdf), file(possible_diplotypes), file(depth_at_padded_baits), file(possible_interactions)
 
     output:
-        tuple val(group), val(meta), file("*.pgx.html"), emit: pgx_html
-        path "versions.yml",                            emit: versions
+        tuple val(group), val(meta), file("*.pgx.html"),            emit: pgx_html
+        tuple val(group), val(meta), file("*.targets.depth.tsv"),   emit: targets_depth
+        path "versions.yml",                                        emit: versions
 
     when:
         task.ext.when == null || task.ext.when
@@ -125,6 +126,7 @@ process GET_PGX_REPORT {
         def prefix  = task.ext.prefix ?: "${meta.group}"
         """
         touch ${prefix}.pgx.html
+        touch ${prefix}.targets.depth.tsv
 
         cat <<-END_VERSIONS > versions.yml
         "${task.process}":

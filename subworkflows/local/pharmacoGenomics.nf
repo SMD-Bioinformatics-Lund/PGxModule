@@ -16,6 +16,7 @@ include { GET_CLIINICAL_GUIDELINES              } from '../../modules/local/pgx_
 include { GET_INTERACTION_GUIDELINES            } from '../../modules/local/pgx_report/main'
 include { GET_PGX_REPORT                        } from '../../modules/local/pgx_report/main'
 
+
 workflow PHARMACO_GENOMICS {
 
     take:
@@ -101,7 +102,9 @@ workflow PHARMACO_GENOMICS {
         )
         ch_versions = ch_versions.mix(GET_PGX_REPORT.out.versions)
 
+
     emit:
-        pgx_report = GET_PGX_REPORT.out.pgx_html    // channel: [ tuple val(group), val(meta) file("pgx.html") ]
-        versions   = ch_versions                    // channel: [ path(versions.yml) ]
+        pgx_report      = GET_PGX_REPORT.out.pgx_html           // channel: [ tuple val(group), val(meta) file("pgx.html") ]
+        targets_depth   = GET_PGX_REPORT.out.targets_depth      // channel: [ tuple val(group), val(meta) file(".targets.depth.tsv") ]
+        versions        = ch_versions                           // channel: [ path(versions.yml) ]
 }
