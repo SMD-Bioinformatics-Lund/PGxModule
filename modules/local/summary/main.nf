@@ -1,211 +1,260 @@
 process SAMPLE_TARGET_LIST {
-	publishDir "${params.outdir}/${params.subdir}/report/coverage/", mode: 'copy', overwrite: true, pattern: "*.list"
-	cpus 1
-	time '1h'
-	tag "$group"
-	stageInMode 'copy'
-	stageOutMode 'copy'
-	container = "${params.python_image}"
+    label 'process_single'
+    label 'stage'
+    tag "$meta.group"
 
-	input:
-		tuple val(group), file(detected_variants), file(target_rsids)
+    input:
+        tuple val(group), val(meta), file(detected_variants)
 
-	output:
-		tuple val(group), file("${group}.pgx_target_interval.list"), emit: pgx_target_interval_list
+    output:
+        tuple val(group), val(meta), file("*.pgx_target_interval.list"),    emit: pgx_target_interval_list
+        path "versions.yml",                                                emit: versions
 
-	script:
-	"""
-	reform_genomic_region.py \
-		--target_bed=$target_rsids \
-		--output_file=${group}.pgx_target_interval.list \
-		--detected_variants=$detected_variants \
-		--addchr=$params.addchr
-	"""
+    when:
+        task.ext.when == null || task.ext.when
 
-	stub:
-	"""
-	touch ${group}.pgx_target_interval.list
-	"""
+    script:
+        def args    = task.ext.args   ?: ''
+        def prefix  = task.ext.prefix ?: "${meta.group}"
+        """
+        reform_genomic_region.py \
+            --output_file=${prefix}.pgx_target_interval.list \
+            --detected_variants=$detected_variants \
+            $args
+
+        cat <<-END_VERSIONS > versions.yml
+        "${task.process}":
+            python: \$(python3 --version 2>&1 | sed -e 's/Python //g')
+        END_VERSIONS
+        """
+
+    stub:
+        def prefix  = task.ext.prefix ?: "${meta.group}"
+        """
+        touch ${prefix}.pgx_target_interval.list
+
+        cat <<-END_VERSIONS > versions.yml
+        "${task.process}":
+            python: \$(python3 --version 2>&1 | sed -e 's/Python //g')
+        END_VERSIONS
+        """
 }
 
 process DEPTH_OF_TARGETS {
     // Get read depth of variant locations at wildtrype-called positions
-	publishDir "${params.outdir}/${params.subdir}/report/coverage/", mode: 'copy', overwrite: true, pattern: "*.gdf"
-	cpus 2
-	time '1h'
-	tag "$group"
-	stageInMode 'copy'
-	stageOutMode 'copy'
-	container = "${params.gatk3_image}"
+    label 'process_low'
+    label 'stage'
+    tag "$meta.group"
 
-	input:
-		tuple val(group), file(ontarget_bam), file(ontarget_bai), file(target_interval_list)
+    input:
+        tuple val(group), val(meta), file(bam), file(bai), file(target_interval_list)
 
-	output:
-		tuple val(group), file("${group}.pgx_depth_at_missing.gdf"), emit: pgx_depth_at_missing
-		tuple val(group), file("${group}.${task.process.split(':').last()}.versions.yaml"), emit: versions
+    output:
+        tuple val(group), val(meta), file("*.pgx_depth_at_missing.gdf"),    emit: pgx_depth_at_missing
+        path "versions.yml",                                                emit: versions
 
-	script:
-	def processName = task.process.toString().split(':').last()
-	"""
-    java -jar /usr/GenomeAnalysisTK.jar -T DepthOfCoverage -R $params.genome_file -I $ontarget_bam -o ${group}.pgx_depth_at_missing.gdf -L $target_interval_list
+    when:
+        task.ext.when == null || task.ext.when
 
-	{
-		echo -e "${processName}:"
-		echo -e "\tGATK DepthOfCoverage:"
-		echo -e "\t\tversion: \$(java -jar /usr/GenomeAnalysisTK.jar --version)"
-		echo -e "\t\tcontainer: ${task.container}"
-	} > "${group}.${processName}.versions.yaml"
-	"""
+    script:
+        def args        = task.ext.args   ?: ''
+        def prefix      = task.ext.prefix ?: "${meta.group}"
+        def avail_mem   = 6144
+        if (!task.memory) {
+            log.info '[GATK DepthOfCoverage] Available memory not known - defaulting to 6GB. Specify process memory requirements to change this.'
+        } else {
+            avail_mem = (task.memory.mega*0.8).intValue()
+        }
+        """
+        java -Xmx${avail_mem}M -jar /usr/GenomeAnalysisTK.jar -T DepthOfCoverage $args \
+        -I $bam \
+        -o ${prefix}.pgx_depth_at_missing.gdf \
+        -L $target_interval_list
 
-	stub:
-	def processName = task.process.toString().split(':').last()
-	"""
-    touch ${group}.pgx_depth_at_missing.gdf
+        cat <<-END_VERSIONS > versions.yml
+        "${task.process}":
+            gatk: \$(java -jar /usr/GenomeAnalysisTK.jar --version)
+        END_VERSIONS
+        """
 
-	{
-		echo -e "${processName}:"
-		echo -e "\tGATK DepthOfCoverage:"
-		echo -e "\t\tversion: \$(java -jar /usr/GenomeAnalysisTK.jar --version)"
-		echo -e "\t\tcontainer: ${task.container}"
-	} > "${group}.${processName}.versions.yaml"
-	"""
+    stub:
+        def prefix      = task.ext.prefix ?: "${meta.group}"
+        """
+        touch ${prefix}.pgx_depth_at_missing.gdf
+
+        cat <<-END_VERSIONS > versions.yml
+        "${task.process}":
+            gatk: \$(java -jar /usr/GenomeAnalysisTK.jar --version)
+        END_VERSIONS
+        """
 }
 
 process GET_PADDED_BAITS {
-	publishDir "${params.outdir}/${params.subdir}/gdf/", mode: 'copy', overwrite: true, pattern: "*.list"
-	cpus 1
-	time '1h'
-	tag "Get_padded_baits_list"
-	stageInMode 'copy'
-	stageOutMode 'copy'
-	container = "${params.python_image}"
+    label 'process_single'
+    label 'stage'
+    tag "Get_padded_baits_list"
 
-	input:
-        file(target_bed)
+    output:
+        path "*padded_bait_interval.list",  emit: padded_baits_list
+        path "versions.yml",                emit: versions
 
-	output:
-		path("padded_bait_interval.list"), emit: padded_baits_list
+    when:
+        task.ext.when == null || task.ext.when
 
-	script:
-	"""
-	reform_genomic_region.py \
-		--target_bed=$target_bed \
-		--output_file=padded_bait_interval.list \
-		--padding=$params.padding \
-		--addchr=$params.addchr
-	"""
+    script:
+        def args        = task.ext.args   ?: ''
+        def prefix      = task.ext.prefix ?: ''
+        """
+        reform_genomic_region.py \
+            --output_file=${prefix}padded_bait_interval.list \
+            $args
 
-	stub:
-	"""
-	touch padded_bait_interval.list
-	"""
+        cat <<-END_VERSIONS > versions.yml
+        "${task.process}":
+            python: \$(python3 --version 2>&1 | sed -e 's/Python //g')
+        END_VERSIONS
+        """
+
+    stub:
+        def prefix      = task.ext.prefix ?: ''
+        """
+        touch ${prefix}padded_bait_interval.list
+
+        cat <<-END_VERSIONS > versions.yml
+        "${task.process}":
+            python: \$(python3 --version 2>&1 | sed -e 's/Python //g')
+        END_VERSIONS
+        """
 }
 
 process DEPTH_OF_BAITS {
     // Get read depth of baits
-	publishDir "${params.outdir}/${params.subdir}/gdf/", mode: 'copy', overwrite: true, pattern: "*.gdf"
-	cpus 2
-	time '1h'
-	tag "$group"
-	stageInMode 'copy'
-	stageOutMode 'copy'
-	container = "${params.gatk3_image}"
+    label 'process_low'
+    label 'stage'
+    tag "$meta.group"
 
-	input:
-        tuple val(group), file(ontarget_bam), file(ontarget_bai), file(padded_baits_interval_list)
+    input:
+        tuple val(group), val(meta), file(bam), file(bai) 
+        path padded_baits_interval_list
 
-	output:
-		tuple val(group), file("${group}.pgx.gdf"), emit: padded_baits_list
-		tuple val(group), file("${group}.${task.process.split(':').last()}.versions.yaml"), emit: versions
+    output:
+        tuple val(group), val(meta), file("*.pgx.gdf"), emit: padded_baits_list
+        path "versions.yml",                            emit: versions
 
-	script:
-	def processName = task.process.toString().split(':').last()
-	"""
-	# NOTE: does not work with openjdk-11, openjdk-8 works
-	java -jar /usr/GenomeAnalysisTK.jar -T DepthOfCoverage -R $params.genome_file -I $ontarget_bam -o ${group}.pgx.gdf -L $padded_baits_interval_list
+    when:
+        task.ext.when == null || task.ext.when
 
-	{
-		echo -e "${processName}:"
-		echo -e "\tGATK DepthOfCoverage:"
-		echo -e "\t\tversion: \$(java -jar /usr/GenomeAnalysisTK.jar --version)"
-		echo -e "\t\tcontainer: ${task.container}"
-	} > "${group}.${processName}.versions.yaml"
-	"""
+    script:
+        def args        = task.ext.args   ?: ''
+        def prefix      = task.ext.prefix ?: "${meta.group}"
+        def avail_mem   = 6144
+        if (!task.memory) {
+            log.info '[GATK DepthOfCoverage] Available memory not known - defaulting to 6GB. Specify process memory requirements to change this.'
+        } else {
+            avail_mem = (task.memory.mega*0.8).intValue()
+        }
+        """
+        # NOTE: does not work with openjdk-11, openjdk-8 works
+        java -Xmx${avail_mem}M -jar /usr/GenomeAnalysisTK.jar -T DepthOfCoverage $args \
+        -I $bam \
+        -o ${prefix}.pgx.gdf \
+        -L $padded_baits_interval_list
 
-	stub:
-	def processName = task.process.toString().split(':').last()
-	"""
-	touch ${group}.pgx.gdf
+        cat <<-END_VERSIONS > versions.yml
+        "${task.process}":
+            gatk: \$(java -jar /usr/GenomeAnalysisTK.jar --version)
+        END_VERSIONS
+        """
 
-	{
-		echo -e "${processName}:"
-		echo -e "\tGATK DepthOfCoverage:"
-		echo -e "\t\tversion: \$(java -jar /usr/GenomeAnalysisTK.jar --version)"
-		echo -e "\t\tcontainer: ${task.container}"
-	} > "${group}.${processName}.versions.yaml"
+    stub:
+        def prefix  = task.ext.prefix ?: "${meta.group}"
+        """
+        touch ${prefix}.pgx.gdf
 
-	"""
+        cat <<-END_VERSIONS > versions.yml
+        "${task.process}":
+            gatk: \$(java -jar /usr/GenomeAnalysisTK.jar --version)
+        END_VERSIONS
+        """
 }
 
 process PADDED_BED_INTERVALS {
-	publishDir "${params.outdir}/${params.subdir}/bam/", mode: 'copy', overwrite: true, pattern: "*.gdf"
-	cpus 1
-	time '1h'
-	tag "pgx_bed_padded_intervals"
-	stageInMode 'copy'
-	stageOutMode 'copy'
-	container = "${params.python_image}"
+    label 'process_single'
+    label 'stage'
+    tag "pgx_bed_padded_intervals"
 
-	input:
-		file(target_bed)
+    output:
+        path '*padded_bait_interval.bed',   emit: padded_bed_intervals
+        path "versions.yml",                emit: versions
 
-	output:
-		path('padded_bait_interval.bed'), emit: padded_bed_intervals
-	
-	script:
-	"""
-    reform_genomic_region.py \
-        --target_bed=$target_bed \
-        --output_file='padded_bait_interval.bed' \
-        --padding=$params.padding \
-        --format='bed' \
-		--addchr=$params.addchr
-	"""
+    when:
+        task.ext.when == null || task.ext.when
 
-	stub:
-	"""
-	touch padded_bait_interval.bed
-	"""
+    script:
+        def args    = task.ext.args   ?: ''
+        def prefix  = task.ext.prefix ?: ''
+        """
+        reform_genomic_region.py \
+            --output_file=${prefix}padded_bait_interval.bed \
+            $args
+
+        cat <<-END_VERSIONS > versions.yml
+        "${task.process}":
+            python: \$(python3 --version 2>&1 | sed -e 's/Python //g')
+        END_VERSIONS
+        """
+
+    stub:
+        def prefix  = task.ext.prefix ?: ''
+        """
+        touch ${prefix}padded_bait_interval.bed
+
+        cat <<-END_VERSIONS > versions.yml
+        "${task.process}":
+            python: \$(python3 --version 2>&1 | sed -e 's/Python //g')
+        END_VERSIONS
+        """
 }
 
 process APPEND_ID_TO_GDF {
-	//  Add variant id to appropriate location in gdf
-	publishDir "${params.outdir}/${params.subdir}/report/coverage/", mode: 'copy', overwrite: true, pattern: "*.gdf"
-	cpus 1
-	time '1h'
-	tag "$group"
-	stageInMode 'copy'
-	stageOutMode 'copy'
-	container = "${params.python_image}"
+    //  Add variant id to appropriate location in gdf
+    label 'process_single'
+    label 'stage'
+    tag "$meta.group"
 
-	input:
-		tuple val(group), file(pgx_depth_at_missing_gdf), file(target_rsids)
+    input:
+        tuple val(group), val(meta), file(gdf)
 
-	output:
-		tuple val(group), file("${group}.pgx_depth_at_missing_annotated.gdf"),  emit: depth_at_missing_annotate_gdf
+    output:
+        tuple val(group), val(meta), file("*.pgx_depth_at_missing_annotated.gdf"),  emit: depth_at_missing_annotate_gdf
+        path "versions.yml",                                                        emit: versions
 
-	script:
-	"""
-	append_rsid_to_gdf.py \
-		--input_gdf=$pgx_depth_at_missing_gdf \
-		--target_bed=$target_rsids \
-		--output_file=${group}.pgx_depth_at_missing_annotated.gdf \
-		--addchr=$params.addchr
-	"""
+    when:
+        task.ext.when == null || task.ext.when
 
-	stub:
-	"""
-	touch ${group}.pgx_depth_at_missing_annotated.gdf
-	"""
+    script:
+        def args    = task.ext.args   ?: ''
+        def prefix  = task.ext.prefix ?: "${meta.group}"
+        """
+        append_rsid_to_gdf.py \
+            --input_gdf=$gdf \
+            --output_file=${prefix}.pgx_depth_at_missing_annotated.gdf \
+            $args
+
+        cat <<-END_VERSIONS > versions.yml
+        "${task.process}":
+            python: \$(python3 --version 2>&1 | sed -e 's/Python //g')
+        END_VERSIONS
+        """
+
+    stub:
+        def prefix  = task.ext.prefix ?: "${meta.group}"
+        """
+        touch ${prefix}.pgx_depth_at_missing_annotated.gdf
+
+        cat <<-END_VERSIONS > versions.yml
+        "${task.process}":
+            python: \$(python3 --version 2>&1 | sed -e 's/Python //g')
+        END_VERSIONS
+        """
 }

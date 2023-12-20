@@ -5,7 +5,7 @@
 
 
 sudo singularity build target_variants_python.sif recepies/get_target_variants
-sudo singularity build rmarkdown.sif recepies/Rmarkdown
+sudo singularity build jinja_report.sif recepies/jinja_report
 sudo singularity build samtools.sif recepies/samtools
 sudo singularity build gatk3.sif docker://broadinstitute/gatk3:3.8-1
 sudo singularity build gatk4.sif docker://broadinstitute/gatk
