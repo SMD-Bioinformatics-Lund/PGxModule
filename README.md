@@ -13,7 +13,7 @@
 
 Welcome to PGxModule: Revolutionizing Genomic Medicine!
 
-PGxModule is an advanced Nextflow DSL2 workflow, designed to seamlessly integrate into your genomics pipeline. It empowers you to generate sample-specific reports with clinical guidelines, leveraging state-of-the-art variant detection in Genomic Medicine Sweden sequencing panels. This workflow was originally derived from [JoelAAs/pgx_module](https://github.com/JoelAAs/pgx_module).
+PGxModule is an advanced Nextflow DSL2 workflow, designed to seamlessly integrate into your genomics pipeline. It empowers you to generate sample-specific reports with clinical guidelines, leveraging state-of-the-art variant detection in Genomic Medicine Sweden sequencing panels. This workflow is inspired by JoelAAs.
 
 ### Key Features:
 
