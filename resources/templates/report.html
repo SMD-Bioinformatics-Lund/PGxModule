@@ -35,7 +35,30 @@
 </table>
 </div>
 
+
 <div class=report_div style="page-break-inside:avoid;">
+  <span class="report_header">Slutsats - Kliniska rekommendationer baserad på genotyper</span>
+  <table class='variant_table'>
+    <tr>
+      <th>Gen</th>
+      <th>Haplotyp</th>
+      <th>Klinisk Rekommendation</th>
+    </tr>
+    {% if report_guidelines is not none %}
+      {% for row in report_guidelines %}
+          <td>{{ row[0] }}</td>
+          <td>{{ row[1] }}</td>
+          <td>{{ row[2] }}</td>
+        </tr>
+      {% endfor %}
+    {% else %}
+      <tr>
+        <td colspan="7">Inga detekterade varianter/rekommendationer</td>
+      </tr>
+    {% endif %}
+  </table>
+
+<div class=report_div style="page-break-before: always;">
   <span class="report_header">Kliniskt relevanta varianter upptäckta</span>
   <table class='variant_table'>
     <tr>
@@ -66,86 +89,6 @@
     {% else %}
       <tr>
         <td colspan="7">Inga detekterade varianter</td>
-      </tr>
-    {% endif %}
-  </table>
-</div>
-
-<span class="report_header">Slutsats</span>
-<div class="conclusion">
-  <div class="results_summary">
-  {% if guidelines_warnings|length > 0 %}
-    En eller flera varianter som tillhör haplotyp har flagats som osäker.<br> De rosamarkerade fälten bör verifieras med blodprov!
-  {% elif clincial_variants is none %}
-    Inga kliniskt relevanta varianter hittades.<br> Följ de vanliga riktlinjerna.
-  {% elif guidelines_warnings|length == 0 and clincial_variants is not none  %}
-    Vissa varianter har upptäckts. <br> Följ den rekommenderade riktlinjen
-  {% else %}
-    Slutsats saknas!
-  {% endif %}
-  </div>
-</div>
-
-<p style="page-break-before: always;"></p>
-<div class=report_div style="page-break-inside:avoid;">
-  <span class="report_header">Kliniska rekommendationer baserad på genotyper</span>
-  <table class='variant_table'>
-    <tr>
-      <th>Gen</th>
-      <th>Haplotyp 1</th>
-      <th>Haplotyp 2</th>
-      <th>Klinisk Rekommendation</th>
-    </tr>
-    {% if guidelines_present is not none %}
-      {% for row in guidelines_present %}
-        {% if (loop.index -1 ) in guidelines_warnings %}
-          <tr style="text-align:left;background-color: #FFE6E6 !important;">
-        {% else %}
-          <tr>
-        {% endif %}
-          <td>{{ row['Gene'] }}</td>
-          <td>{{ row['Haplotype 1'] }}</td>
-          <td>{{ row['Haplotype 2'] }}</td>
-          <td>{{ row['Clinical Recommendation'] }}</td>
-        </tr>
-      {% endfor %}
-    {% else %}
-      <tr>
-        <td colspan="4">Inga kliniska rekommendationer baserade på genotyper hittades</td>
-      </tr>
-    {% endif %}
-  </table>
-</div>
-
-<div class=report_div style="page-break-inside:avoid;">
-  <span class="report_header">Kliniska rekomendationer baserade på interaktioner mellan genotyper</span>
-  <table class='variant_table'>
-    <tr>
-      <th width="8%">Gen 1</th>
-      <th width="8%">Gen 2</th>
-      <th width="8%">Aktivitet 1</th>
-      <th width="8%">Aktivitet 2</th>
-      <th width="12%">Haplotyper</th>
-      <th width="60%">Riktlinjer</th>
-    </tr>
-    {% if possible_interactions is not none %}
-      {% for row in possible_interactions %}
-        {% if (loop.index -1 ) in interactions_warnings %}
-          <tr style="text-align:left;background-color: #FFE6E6 !important;">
-        {% else %}
-          <tr>
-        {% endif %}
-          <td>{{ row['gene1'] }}</td>
-          <td>{{ row['gene2'] }}</td>
-          <td>{{ row['activity_1'] }}</td>
-          <td>{{ row['activity_2'] }}</td>
-          <td>{{ ' '.join(row['haplotypes'].split(',')|set|list) }}</td>
-          <td>{{ row['Guideline'] }}</td>
-        </tr>
-      {% endfor %}
-    {% else %}
-      <tr>
-        <td colspan="6">Inga kliniska rekommendationer baserade på interaktioner mellan genotyper har hittats</td>
       </tr>
     {% endif %}
   </table>
