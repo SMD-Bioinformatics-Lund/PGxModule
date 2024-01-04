@@ -23,7 +23,6 @@ def filter_variants(vcf, read_ratio, depth, output):
             ad = tuple([0])
         #  No multiallelic split
 
-
         if record.info["DP"] < depth:
             record.filter.add(f"DP{depth}")
         elif len(ad) == 2:
@@ -32,8 +31,9 @@ def filter_variants(vcf, read_ratio, depth, output):
                 record.filter.add(f"AR{read_ratio}")
             else:
                 record.filter.add(f"PASS")
-        
-        vcf_out.write(record)        
+
+        vcf_out.write(record)
+
 
 def main():
     parser = argparse.ArgumentParser(

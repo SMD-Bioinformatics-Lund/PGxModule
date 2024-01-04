@@ -9,37 +9,37 @@ import sys
 from distutils.util import strtobool
 
 
-
 class GDF:
     """
     We are assuming single sample GDF
     """
 
-    def __init__(self, filename,addchrs):
+    def __init__(self, filename, addchrs):
         self.data = pd.read_csv(filename, sep="\t")
         self.data_cols = self.data.columns.values
         self.addchr = addchrs
 
         pos_df = pd.DataFrame(
             self.data.Locus.apply(lambda x: x.split(":")).to_list(),
-            columns=["CHROM", "POS"]
+            columns=["CHROM", "POS"],
         )
-        pos_df.POS = pos_df.POS.astype('int64')
+        pos_df.POS = pos_df.POS.astype("int64")
         self.data = pd.concat([self.data, pos_df], axis=1)
 
     def rsid_per_position(self, target_bed):
         def _annotate(x, targets):
             try:
-                ids = targets[(targets.CHROM == x.CHROM) &
-                              (targets.START <= x.POS) &
-                              (x.POS <= targets.END)].ID.to_list()
+                ids = targets[
+                    (targets.CHROM == x.CHROM)
+                    & (targets.START <= x.POS)
+                    & (x.POS <= targets.END)
+                ].ID.to_list()
                 return ", ".join(ids)
             except IndexError:
                 return "-"
 
         targets = pd.read_csv(
-            target_bed, sep="\t",
-            names=["CHROM", "START", "END", "ID", "GENE"]
+            target_bed, sep="\t", names=["CHROM", "START", "END", "ID", "GENE"]
         )
         targets["save"] = targets.START
         idx_swap = targets.START > targets.END
@@ -61,8 +61,9 @@ class GDF:
 
 class VCF:
     """
-     We are assuming single sample VCF
-     """
+    We are assuming single sample VCF
+    """
+
     def __init__(self, filename):
         self.meta = []
         self.data = pd.DataFrame()
@@ -85,7 +86,7 @@ class VCF:
         if i is None:
             raise ImportError("No lines in: " + filename)
 
-        self.meta = lines[:i - 1]
+        self.meta = lines[: i - 1]
         data = [l.split("\t") for l in lines[i:]]
         self.data = pd.DataFrame(data[1:], columns=data[0])
         self.original_header = self.data.columns.values
@@ -93,8 +94,10 @@ class VCF:
             sample_column = self.data.columns.values[-1]
             max_len_idx = self.data.FORMAT.str.len().idxmax
             format_columns = self.data.FORMAT[max_len_idx].split(":")
-            format_split = pd.DataFrame(self.data[sample_column].apply(lambda x: x.split(":")).to_list(),
-                                        columns=format_columns)
+            format_split = pd.DataFrame(
+                self.data[sample_column].apply(lambda x: x.split(":")).to_list(),
+                columns=format_columns,
+            )
             self.data = pd.concat([self.data, format_split], axis=1)
 
     def filter_snp(self, filter_file, exclude=True, column="SNP"):
@@ -109,7 +112,9 @@ class VCF:
             for line in self.meta:
                 f.write(line + "\n")
 
-            self.data.to_csv(f, mode="a", sep="\t", columns=self.original_header, index=False)
+            self.data.to_csv(
+                f, mode="a", sep="\t", columns=self.original_header, index=False
+            )
 
 
 class VariantQCCollection:
@@ -125,8 +130,8 @@ class VariantQCCollection:
         Select all variants within VCF with ID same as in target_bed
         """
         self.detected_variants = self.vcf.data.ID[
-            (self.vcf.data.ID.isin(self.bed_targets.ID)) &
-            (self.vcf.data.FILTER == "PASS")
+            (self.vcf.data.ID.isin(self.bed_targets.ID))
+            & (self.vcf.data.FILTER == "PASS")
         ].tolist()
 
     def write_detected_variant_qc(self, output_file):
@@ -138,8 +143,7 @@ class VariantQCCollection:
 
         current_variants = self.vcf.data[self.vcf.data.ID.isin(self.detected_variants)]
         current_variants = current_variants.merge(
-            self.bed_targets[["ID", "GENE"]],
-            on="ID"
+            self.bed_targets[["ID", "GENE"]], on="ID"
         )
 
         current_variants.to_csv(output_file, index=False, sep="\t")
@@ -149,10 +153,21 @@ def main():
     parser = argparse.ArgumentParser(
         description="Finds selected RSIDs form bed file in input VCF"
     )
-    parser.add_argument("--target_bed", type=str, help="Bed-file containing RSIDs of interest")
+    parser.add_argument(
+        "--target_bed", type=str, help="Bed-file containing RSIDs of interest"
+    )
     parser.add_argument("--vcf", type=str)
-    parser.add_argument("--output", type=str, help="Location of output, NOTE: will overwrite")
-    parser.add_argument("--addchr", type=lambda x:bool(strtobool(x)), nargs='?', const=True, default=False,help="add chr to the chromosomes")
+    parser.add_argument(
+        "--output", type=str, help="Location of output, NOTE: will overwrite"
+    )
+    parser.add_argument(
+        "--addchr",
+        type=lambda x: bool(strtobool(x)),
+        nargs="?",
+        const=True,
+        default=False,
+        help="add chr to the chromosomes",
+    )
 
     args = parser.parse_args(sys.argv[1:])
     vcf_f = args.vcf
@@ -164,5 +179,5 @@ def main():
     var_collect.write_detected_variant_qc(output_f)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

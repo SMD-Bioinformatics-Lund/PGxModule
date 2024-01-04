@@ -62,6 +62,9 @@ class Report(UtilityFunctions):
         self.target_bed_df = self.readfile(self.target_bed)
         self.target_rsids_df = self.readfile(self.target_rsids)
         self.logo_base64 = self.create_base64_logo(self.logo)
+        self.faulty_haplotype_recommendation = (
+            "Ingen rekommendation ges pga obalans i heterozygositet"
+        )
 
     def _check_args(self, **kwargs):
         # Check if all required arguments are present
@@ -194,12 +197,13 @@ class Report(UtilityFunctions):
         return faulty_haplotypes
 
     def get_clinical_recommendations(self, faulty_haplotypes_list) -> pd.DataFrame:
-        clin_columns = ["gene", "Haplotype1", "Haplotype2", "Guideline"]
+        clin_columns = ["gene", "Haplotype1", "Haplotype2", "Guideline", "Activity"]
         verbose_columns = [
             "Gene",
             "Haplotype 1",
             "Haplotype 2",
             "Clinical Recommendation",
+            "Activity",
         ]
 
         clinical_guidelines_present = self.possible_diplotypes_df[clin_columns].rename(
@@ -207,14 +211,17 @@ class Report(UtilityFunctions):
         )
 
         faulty_haplotypes_set = set(faulty_haplotypes_list)
-        warning_idx = clinical_guidelines_present[
+
+        # Set the clinical recommendation to "No recommendation" for faulty haplotypes
+        clinical_guidelines_present.loc[
             (clinical_guidelines_present["Haplotype 1"].isin(faulty_haplotypes_set))
-            | (clinical_guidelines_present["Haplotype 2"].isin(faulty_haplotypes_set))
-        ].index.tolist()
+            | (clinical_guidelines_present["Haplotype 2"].isin(faulty_haplotypes_set)),
+            "Clinical Recommendation",
+        ] = self.faulty_haplotype_recommendation
 
-        return clinical_guidelines_present, warning_idx
+        return clinical_guidelines_present
 
-    def get_interactions_warnings(self, faulty_haplotypes_list) -> list:
+    def format_interactions_guidelines(self, faulty_haplotypes_list) -> list:
         """
         Get the interactions for the given list of faulty haplotypes.
 
@@ -225,19 +232,47 @@ class Report(UtilityFunctions):
             list: A list of indices indicating the interactions with faulty haplotypes.
         """
         if len(self.possible_interactions_df) != 0:
-            interaction_warning_idx = self.possible_interactions_df["haplotypes"].apply(
-                lambda x: any(
-                    haplotype in faulty_haplotypes_list for haplotype in x.split(",")
-                )
-            )
+            # Set the interaction guideline to "No recommendation" for faulty haplotypes
+            for haplotype in faulty_haplotypes_list:
+                if haplotype is None or haplotype == "":
+                    continue
+                self.possible_interactions_df.loc[
+                    self.possible_interactions_df["haplotypes"].str.contains(haplotype),
+                    "Guideline",
+                ] = self.faulty_haplotype_recommendation
 
-            interaction_warning_idx = interaction_warning_idx[
-                interaction_warning_idx
-            ].index.tolist()
-        else:
-            interaction_warning_idx = []
+    def format_guidelines_for_report(self, clinical_guidelines, interaction_guidelines):
+        report_guidelines = []
 
-        return interaction_warning_idx
+        # for DPYD gene guideline
+        dpyd_df = clinical_guidelines[clinical_guidelines["Gene"] == "DPYD"]
+
+        if not dpyd_df.empty:
+            for index, row in dpyd_df.iterrows():
+                row_list = ["DPYD"]
+                row_list.append(f"{row['Haplotype 1']}/{row['Haplotype 2']}")
+                row_list.append(row["Clinical Recommendation"])
+                report_guidelines.append(row_list)
+
+        # for TPMT/NUDT15 gene guideline
+        if not interaction_guidelines.empty:
+            for index, row in interaction_guidelines.iterrows():
+                row_list = ["TPMT-NUDT15"]
+
+                haplotypes = row["haplotypes"].split(",")
+                tpmt = [h for h in haplotypes if "TPMT" in h]
+                nudt15 = [h for h in haplotypes if "NUDT15" in h]
+                if len(tpmt) == 2:
+                    tpmt = "/".join(tpmt)
+
+                if len(nudt15) == 2:
+                    nudt15 = "/".join(nudt15)
+
+                row_list.append(f"{tpmt},{nudt15}")
+                row_list.append(row["Guideline"])
+                report_guidelines.append(row_list)
+
+        return report_guidelines
 
     def get_low_depth_targets(self, read_depth_threshold=100) -> pd.DataFrame | None:
         """
@@ -327,14 +362,22 @@ class Report(UtilityFunctions):
 
         faulty_haplotypes = self.get_faulty_haplotypes(clincial_variants)
 
-        guidelines_present, guidelines_warnings = self.get_clinical_recommendations(
-            faulty_haplotypes
+        guidelines_present = self.get_clinical_recommendations(faulty_haplotypes)
+
+        # Format the interaction guidelines if there are faluty haplotypes
+        self.format_interactions_guidelines(faulty_haplotypes)
+
+        # Get clinical and interaction guidelines for report
+        report_guidelines = self.format_guidelines_for_report(
+            guidelines_present, self.possible_interactions_df
         )
 
-        interactions_warnings = self.get_interactions_warnings(faulty_haplotypes)
+        # get low depth targets
         low_depth_targets = self.get_low_depth_targets(
             read_depth_threshold=self.read_depth
         )
+
+        # Get list of genes
         gene_list = self.get_genes()
 
         # Render the Jinja2 template
@@ -350,11 +393,8 @@ class Report(UtilityFunctions):
         rendered_content = template.render(
             group=self.group,
             clincial_variants=self.df_to_dict(clincial_variants),
-            faulty_haplotypes=faulty_haplotypes,
             guidelines_present=self.df_to_dict(guidelines_present),
-            guidelines_warnings=guidelines_warnings,
-            possible_interactions=self.df_to_dict(self.possible_interactions_df),
-            interactions_warnings=interactions_warnings,
+            report_guidelines=report_guidelines,
             low_depth_targets=self.df_to_dict(low_depth_targets),
             targets=targets,
             read_depth=self.read_depth,
@@ -369,7 +409,7 @@ class Report(UtilityFunctions):
         with open(self.output, "w") as output_file:
             output_file.write(rendered_content)
 
-        pdf_file_path = f"{self.output}.pdf"
-        HTML(string=rendered_content).write_pdf(pdf_file_path)
+        # pdf_file_path = f"{self.output}.pdf"
+        # HTML(string=rendered_content).write_pdf(pdf_file_path)
 
         print(f"Report saved to: {self.output}")
