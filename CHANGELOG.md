@@ -1,0 +1,17 @@
+# V1.0.0
+1. Added and updated various features:
+   - Added license and workflow image.
+   - Implemented nf-core style stubs.
+   - Completed modularization of the pipeline with external arguments, singularity images, and configs.
+   - Introduced panel/WGS profiles.
+   - Addressed issues with variant calling for multiple samples and parallelization.
+2. Variant calling and analysis improvements:
+   - Added variant calling with SENTIEON/GATK, including variant filtration and annotation.
+3. Important updates and fixes:
+   - Corrected the NUDT15-3 rsID issue.
+   - Updated recipe files and references for HG38 in configs, improving variant filtration.
+4. Various report enhancements:
+   - Fixed report warnings and updated report generation logic.
+   - Improved report format, including a new logo, CSS updates, and added a gene table.
+   - Added quality control comments and sample-specific MultiQC reporting.
+   - Introduced a new Python-based reporting module, replacing the older R-based module.
