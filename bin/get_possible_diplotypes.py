@@ -25,7 +25,6 @@ class ArrangeHaplotype:
         self.activity_scores = pd.read_csv(activity_scores, sep="\t")
         self.clinical_guidelines = pd.read_csv(clinical_guidelines, sep="\t")
         if not self.detected_variants.empty:
-            print(self.detected_variants)
             self.merge_data()
 
     def merge_data(self):
@@ -44,8 +43,6 @@ class ArrangeHaplotype:
         self.detected_variants["CN"] = self.detected_variants["GT"].apply(
             lambda x: sum(map(int, re.split("[/|]+", x)))
         )
-
-        print(self.detected_variants)
 
     def get_haplotypes(self):
         """
@@ -103,7 +100,7 @@ class ArrangeHaplotype:
         full_mat = {}
         for gene in genes:
             gene_subset = self.detected_variants[self.detected_variants.GENE == gene]
-            # print(gene_subset)
+            print(gene_subset)
             candidate_haplotypes = np.array(
                 list(
                     set(
@@ -151,7 +148,6 @@ class ArrangeHaplotype:
 
     def get_haplotype_dataframe(self):  # Wow what a mess
         hap_mat = self.get_haplotypes()
-        print(hap_mat)
 
         def _haplot_to_row(hap, gene):
             def prim_haplot_to_row(hap, gene):
@@ -172,7 +168,6 @@ class ArrangeHaplotype:
         hap_df = pd.DataFrame(out, columns=["Haplotype1", "Haplotype2", "gene", "pass"])
         hap_df = hap_df[hap_df["pass"]]
 
-        print(hap_df)
         return hap_df[["gene", "Haplotype1", "Haplotype2"]]
 
     def get_clinical_guidelines_table(self):
@@ -195,7 +190,6 @@ class ArrangeHaplotype:
         hap_df = hap_df.merge(
             self.activity_scores, how="left", left_on="Haplotype1", right_on="HAPLOTYPE"
         )
-        print(hap_df)
         hap_df = hap_df.merge(
             self.activity_scores,
             how="left",
@@ -203,11 +197,9 @@ class ArrangeHaplotype:
             right_on="HAPLOTYPE",
             suffixes=("1", "2"),
         )
-        print(hap_df)
         hap_df["Genotype_activity"] = (
             hap_df["ACTIVITY_SCORE1"] + hap_df["ACTIVITY_SCORE2"]
         )
-        print(hap_df)
 
         hap_df = hap_df.merge(
             self.clinical_guidelines,
@@ -215,8 +207,6 @@ class ArrangeHaplotype:
             left_on=["gene", "Genotype_activity"],
             right_on=["Gene", "Activity"],
         )
-
-        print(hap_df)
 
         return hap_df
 
@@ -244,7 +234,6 @@ class ArrangeHaplotype:
                 )
                 hap_df = hap_df.append(gene_df, ignore_index=True)
 
-        print(hap_df)
         return hap_df
 
 
@@ -292,15 +281,12 @@ def main():
         hidden_haplotypes["comb"] = hidden_haplotypes[
             ["Haplotype1", "Haplotype2"]
         ].apply(lambda x: "".join(sorted(x.tolist())), axis=1)
-        print(hidden_haplotypes)
         df["comb"] = df[["Haplotype1", "Haplotype2"]].apply(
             lambda x: "".join(sorted(x.tolist())), axis=1
         )
-        print(df)
         print(df["comb"])
         print(hidden_haplotypes["comb"])
         df = df[~df["comb"].isin(hidden_haplotypes["comb"])]
-        print(df)
     df.to_csv(output, sep="\t", index=False, columns=columns)
 
 
