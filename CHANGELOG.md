@@ -1,4 +1,7 @@
-# V1.0.0
+# v1.0.1
+- The report will now include a telephone number for medical information support related to its contents.
+
+# v1.0.0
 1. Added and updated various features:
    - Added license and workflow image.
    - Implemented nf-core style stubs.
