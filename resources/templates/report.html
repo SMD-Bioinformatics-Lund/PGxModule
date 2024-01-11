@@ -32,9 +32,8 @@
     <tr>
       <td class="report_key">Rapportdatum</td><td class="report_val">{{ date }}</td>
     </tr>
-</table>
+  </table>
 </div>
-
 
 <div class=report_div style="page-break-inside:avoid;">
   <span class="report_header">Slutsats - Kliniska rekommendationer baserad på genotyper</span>
@@ -57,6 +56,9 @@
       </tr>
     {% endif %}
   </table>
+  <br>
+  <p style="font-size: 12px">Vid frågor ring telefonnumret 046 - 174620 (helgfria vardagar 10:00 - 16:00) Läkemedelsinformationscentral.</p>
+</div>
 
 <div class=report_div style="page-break-before: always;">
   <span class="report_header">Kliniskt relevanta varianter upptäckta</span>
@@ -160,11 +162,12 @@
     </table>
   {% endif %}
 </div>
+
 <div class="analysis_description" style="page-break-inside:avoid;">
-<p>
-  <b>Referenser</b><p>
-  [1] Standards and guidelines for the interpretation and reporting of sequence variants in cancer. Li et al, Journal of Molecular Diagnostics, 2017.
-</p>
+  <p>
+    <b>Referenser</b><p>
+    [1] Standards and guidelines for the interpretation and reporting of sequence variants in cancer. Li et al, Journal of Molecular Diagnostics, 2017.
+  </p>
 </div>
 
 {% endblock %}
