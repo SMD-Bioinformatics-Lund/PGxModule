@@ -1,3 +1,7 @@
+# v1.0.2
+- Updated DPYD HapB3 haplotype related rsids (rs75017182 and rs56038477)
+- Main target bed regions are padded with 20bp up and down stream
+  
 # v1.0.1
 - The report will now include a telephone number for medical information support related to its contents.
 
