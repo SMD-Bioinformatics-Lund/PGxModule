@@ -1,3 +1,6 @@
+# v1.1.0
+- Added pharmCAT module to the pipeline
+
 # v1.0.2
 - Updated DPYD HapB3 haplotype related rsids (rs75017182 and rs56038477)
 - Main target bed regions are padded with 20bp up and down stream
