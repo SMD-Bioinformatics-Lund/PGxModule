@@ -33,4 +33,5 @@ create_pgx_samplesheet.sh
 # Other files
 bin/report_template.txt
 bin/snakemake_report.py
+bin/make_exon_bed_files.py
 bin/pdf.py
