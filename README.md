@@ -1,9 +1,9 @@
 <hr>
 
-[![Nextflow DSL2](https://img.shields.io/badge/nextflow%20DSL2-%E2%89%A523.04.0-23aa62.svg)](https://www.nextflow.io/docs/latest/dsl2.html) [![Singularity Version](https://img.shields.io/badge/Singularity-%E2%89%A53.8.0-orange)](https://sylabs.io/docs/) [![Run with Singularity](https://img.shields.io/badge/Run%20with-Singularity-orange)](https://sylabs.io/docs/)
+[![Nextflow DSL2](https://img.shields.io/badge/NextFlow_DSL2-23.04.0-23.svg)](https://www.nextflow.io/docs/latest/dsl2.html) [![Singularity Version](https://img.shields.io/badge/Singularity-%E2%89%A53.8.0-orange)](https://sylabs.io/docs/) [![Run with Singularity](https://img.shields.io/badge/Run%20with-Singularity-orange)](https://sylabs.io/docs/)
 
-[![PharmGKB](https://img.shields.io/badge/PharmGKB-Explore-blue)](https://www.pharmgkb.org/) [![CPIC](https://img.shields.io/badge/CPIC-Explore-green)](https://cpicpgx.org/) [![PharmVar](https://img.shields.io/badge/PharmVar-Explore-yellow)](https://www.pharmvar.org/)
-
+[![PharmGKB](https://img.shields.io/badge/PharmGKB-blue)](https://www.pharmgkb.org/) [![CPIC](https://img.shields.io/badge/CPIC-green)](https://cpicpgx.org/) [![PharmVar](https://img.shields.io/badge/PharmVar-yellow)](https://www.pharmvar.org/)
+[![PharmCAT](https://img.shields.io/badge/Support_for-PharmCAT-orange)](https://pharmcat.org/)
 <hr>
 
 <!-- HTML-style heading -->
