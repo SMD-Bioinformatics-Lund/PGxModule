@@ -10,5 +10,7 @@ sudo singularity build samtools.sif recepies/samtools
 sudo singularity build gatk3.sif docker://broadinstitute/gatk3:3.8-1
 sudo singularity build gatk4.sif docker://broadinstitute/gatk
 sudo singularity build bcftools.sif docker://staphb/bcftools
+sudo singularity build pharmcat.sif docker://pgkb/pharmcat
+
 
 
