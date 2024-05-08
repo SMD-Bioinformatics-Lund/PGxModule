@@ -1,3 +1,6 @@
+# v1.1.1
+- Updated QC text in the report
+
 # v1.1.0
 - Added pharmCAT module to the pipeline
 
