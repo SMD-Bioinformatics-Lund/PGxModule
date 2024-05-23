@@ -39,101 +39,45 @@ process ONTARGET_BAM {
         """
 }
 
-
-process GATK_HAPLOTYPING {
-    label 'process_high'
+process ONTARGET_VCF {
+    label 'process_low'
     label 'stage'
     tag "$meta.group"
 
     input:
-        tuple val(group), val(meta), file(bam), file(bai)
+        tuple val(group), val(meta), file(vcf), file(tbi) 
+        path pgx_ontarget_padded_bed
 
     output:
-        tuple val(group), val(meta), file("*.haplotypes.vcf.gz"), file("*.haplotypes.vcf.gz.tbi"),  emit: haplotypes
-        path "versions.yml",                                                                        emit: versions
+        tuple val(group),  val(meta), file("*.ontarget.filtered.haplotypes.vcf.gz"), file("*.ontarget.filtered.haplotypes.vcf.gz.tbi"), emit: vcf_ontarget
+        path "versions.yml",                                                                                                            emit: versions
 
     when:
         task.ext.when == null || task.ext.when
 
     script:
-        def args        = task.ext.args   ?: ''
-        def prefix      = task.ext.prefix ?: "${meta.group}.GATK"
-        def avail_mem   = 12288
-        if (!task.memory) {
-            log.info '[GATK CollectAllelicCounts] Available memory not known - defaulting to 12GB. Specify process memory requirements to change this.'
-        } else {
-            avail_mem = (task.memory.mega*0.8).intValue()
-        }
+        def args    = task.ext.args   ?: ''
+        def prefix  = task.ext.prefix ?: "${meta.group}"
         """
-        gatk --java-options "-Xmx${avail_mem}M" HaplotypeCaller $args -I $bam -O ${prefix}.haplotypes.vcf
-        bgzip -c ${prefix}.haplotypes.vcf > ${prefix}.haplotypes.vcf.gz
-        tabix ${prefix}.haplotypes.vcf.gz
+        tabix -h -R $pgx_ontarget_padded_bed $vcf | bgzip -c > ${prefix}.ontarget.filtered.haplotypes.vcf.gz
+        tabix -p vcf ${prefix}.ontarget.filtered.haplotypes.vcf.gz
 
         cat <<-END_VERSIONS > versions.yml
         "${task.process}":
-            gatk4: \$(echo \$(gatk --version 2>&1) | sed 's/^.*(GATK) v//; s/ .*\$//')
-            bgzip: \$(bgzip --v | grep 'bgzip' | sed 's/.* //g')
-            tabix: \$(echo \$(tabix -h 2>&1) | sed 's/^.*Version: //; s/ .*\$//')
+            tabix: \$(tabix --help 2>&1 | grep 'Version' | sed 's/^.*Version: //'')
         END_VERSIONS
         """
 
     stub:
-        def prefix      = task.ext.prefix ?: "${meta.group}.GATK"
+        def prefix  = task.ext.prefix ?: "${meta.group}"
         """
-        touch ${prefix}.haplotypes.vcf.gz ${prefix}.haplotypes.vcf.gz.tbi
+        touch ${prefix}.ontarget.filtered.haplotypes.vcf.gz ${prefix}.ontarget.filtered.haplotypes.vcf.gz.tbi
 
         cat <<-END_VERSIONS > versions.yml
         "${task.process}":
-            gatk4: \$(echo \$(gatk --version 2>&1) | sed 's/^.*(GATK) v//; s/ .*\$//')
-            bgzip: \$(bgzip --v | grep 'bgzip' | sed 's/.* //g')
-            tabix: \$(echo \$(tabix -h 2>&1) | sed 's/^.*Version: //; s/ .*\$//')
+            tabix: \$(tabix --help 2>&1 | grep 'Version' | sed 's/^.*Version: //'')
         END_VERSIONS
         """
 }
 
 
-process SENTIEON_HAPLOTYPING {
-    label 'process_high'
-    label 'stage'
-    tag "$meta.group"
-
-    input:
-        tuple val(group), val(meta), file(bam), file(bai)
-
-    output:
-        tuple val(group), val(meta), file("*.haplotypes.vcf.gz"), file("*.haplotypes.vcf.gz.tbi"),  emit: haplotypes
-        path "versions.yml",                                                                        emit: versions
-
-    when:
-        task.ext.when == null || task.ext.when
-
-    script:
-        def args        = task.ext.args   ?: ''
-        def args2       = task.ext.args2  ?: ''
-        def prefix      = task.ext.prefix ?: "${meta.group}.sentieon"
-        """
-        sentieon driver -t ${task.cpus} $args -i $bam --algo Haplotyper $args2 ${prefix}.haplotypes.vcf
-        bgzip -c ${prefix}.haplotypes.vcf > ${prefix}.haplotypes.vcf.gz
-        tabix ${prefix}.haplotypes.vcf.gz
-
-        cat <<-END_VERSIONS > versions.yml
-        "${task.process}":
-            sentieon: \$(echo \$(sentieon driver --version 2>&1) | sed -e "s/sentieon-genomics-//g")
-            bgzip: \$(bgzip --v | grep 'bgzip' | sed 's/.* //g')
-            tabix: \$(echo \$(tabix -h 2>&1) | sed 's/^.*Version: //; s/ .*\$//')
-        END_VERSIONS
-        """
-
-    stub:
-        def prefix = task.ext.prefix ?: "${meta.group}.sentieon"
-        """
-        touch ${prefix}.haplotypes.vcf.gz ${prefix}.haplotypes.vcf.gz.tbi
-
-        cat <<-END_VERSIONS > versions.yml
-        "${task.process}":
-            sentieon: \$(echo \$(sentieon driver --version 2>&1) | sed -e "s/sentieon-genomics-//g")
-            bgzip: \$(bgzip --v | grep 'bgzip' | sed 's/.* //g')
-            tabix: \$(echo \$(tabix -h 2>&1) | sed 's/^.*Version: //; s/ .*\$//')
-        END_VERSIONS
-        """
-}
