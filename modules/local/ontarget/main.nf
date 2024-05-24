@@ -49,7 +49,7 @@ process ONTARGET_VCF {
         path pgx_ontarget_padded_bed
 
     output:
-        tuple val(group),  val(meta), file("*.ontarget.filtered.haplotypes.vcf.gz"), file("*.ontarget.filtered.haplotypes.vcf.gz.tbi"), emit: vcf_ontarget
+        tuple val(group), val(meta), file("*.ontarget.filtered.haplotypes.vcf.gz"), file("*.ontarget.filtered.haplotypes.vcf.gz.tbi"),  emit: vcf_ontarget
         path "versions.yml",                                                                                                            emit: versions
 
     when:
@@ -59,23 +59,25 @@ process ONTARGET_VCF {
         def args    = task.ext.args   ?: ''
         def prefix  = task.ext.prefix ?: "${meta.group}"
         """
-        tabix -h -R $pgx_ontarget_padded_bed $vcf | bgzip -c > ${prefix}.ontarget.filtered.haplotypes.vcf.gz
+        bcftools view $args -o ${prefix}.ontarget.filtered.haplotypes.vcf -R $pgx_ontarget_padded_bed $vcf
+        bgzip -c ${prefix}.ontarget.filtered.haplotypes.vcf > ${prefix}.ontarget.filtered.haplotypes.vcf.gz
         tabix -p vcf ${prefix}.ontarget.filtered.haplotypes.vcf.gz
 
         cat <<-END_VERSIONS > versions.yml
         "${task.process}":
-            tabix: \$(tabix --help 2>&1 | grep 'Version' | sed 's/^.*Version: //'')
+            bcftools: \$(bcftools --version | grep 'bcftools' 2>&1 | sed 's/^.*bcftools //')
         END_VERSIONS
         """
 
     stub:
         def prefix  = task.ext.prefix ?: "${meta.group}"
         """
-        touch ${prefix}.ontarget.filtered.haplotypes.vcf.gz ${prefix}.ontarget.filtered.haplotypes.vcf.gz.tbi
+        touch ${prefix}.ontarget.filtered.haplotypes.vcf.gz
+        touch ${prefix}.ontarget.filtered.haplotypes.vcf.gz.tbi
 
         cat <<-END_VERSIONS > versions.yml
         "${task.process}":
-            tabix: \$(tabix --help 2>&1 | grep 'Version' | sed 's/^.*Version: //'')
+            bcftools: \$(bcftools --version | grep 'bcftools' 2>&1 | sed 's/^.*bcftools //')
         END_VERSIONS
         """
 }

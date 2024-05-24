@@ -46,7 +46,7 @@ workflow PHARMACO_GENOMICS {
         ch_versions   = Channel.empty().mix(GATK_HAPLOTYPING.out.versions, SENTIEON_HAPLOTYPING.out.versions)
 
         // Filter the haplotypes
-        VARIANT_FILTRATION ( ch_haplotypes.out.haplotypes )        
+        VARIANT_FILTRATION ( ch_haplotypes )        
         ch_versions = ch_versions.mix(VARIANT_FILTRATION.out.versions)
 
         // Preprocess the pharmcat
@@ -54,7 +54,7 @@ workflow PHARMACO_GENOMICS {
         ch_versions = ch_versions.mix(PHARMCAT_PREPROCESSING.out.versions)
 
         // Run the pharmcat
-        PHARMCAT ( PHARMCAT_PREPROCESSING.out.pharmcat_pgx_regions )
+        PHARMCAT ( PHARMCAT_PREPROCESSING.out.pharmcat_preprocessed_vcf )
         ch_versions = ch_versions.mix(PHARMCAT.out.versions)
 
         // ONtarget Variants
@@ -119,11 +119,14 @@ workflow PHARMACO_GENOMICS {
 
 
     emit:
-        pgx_report              = GET_PGX_REPORT.out.pgx_html                       // channel: [ tuple val(group), val(meta) file("pgx.html") ]
-        pharmcat_preprocessed   = PHARMCAT_PREPROCESSING.out.pharmcat_preprocessed  // channel: [ tuple val(group), val(meta) file("pharmcat_preprocessed.vcf") ]
-        pharmcat_report         = PHARMCAT.out.pharmcat_report                      // channel: [ tuple val(group), val(meta) file("pharmcat.html") ]
-        pharmcat_pheno_json     = PHARMCAT.out.pharmcat_pheno_json                  // channel: [ tuple val(group), val(meta) file("pharmcat.phenotype.json") ]
-        pharmcat_macth_json     = PHARMCAT.out.pharmcat_macth_json                  // channel: [ tuple val(group), val(meta) file("pharmcat.match.json") ]
-        targets_depth           = GET_PGX_REPORT.out.targets_depth                  // channel: [ tuple val(group), val(meta) file(".targets.depth.tsv") ]
-        versions                = ch_versions                                       // channel: [ path(versions.yml) ]
+        pgx_report              = GET_PGX_REPORT.out.pgx_html                           // channel: [ tuple val(group), val(meta) file("pgx.html") ]
+        // pharmcat_pgx_regions    = PHARMCAT_PREPROCESSING.out.pharmcat_pgx_regions    // channel: [ tuple val(group), val(meta) file("pharmcat_pgx_regions.vcf") ]
+        pharmcat_preprocessed   = PHARMCAT_PREPROCESSING.out.pharmcat_preprocessed_vcf  // channel: [ tuple val(group), val(meta) file("pharmcat_preprocessed.vcf") ]
+        pharmcat_report         = PHARMCAT.out.pharmcat_report                          // channel: [ tuple val(group), val(meta) file("pharmcat.html") ]
+        pharmcat_pheno_json     = PHARMCAT.out.pharmcat_pheno_json                      // channel: [ tuple val(group), val(meta) file("pharmcat.phenotype.json") ]
+        pharmcat_match_json     = PHARMCAT.out.pharmcat_match_json                      // channel: [ tuple val(group), val(meta) file("pharmcat.match.json") ]
+        pharmcat_match_html     = PHARMCAT.out.pharmcat_match_html                      // channel: [ tuple val(group), val(meta) file("pharmcat.match.html") ]
+        pharmcat_report_json     = PHARMCAT.out.pharmcat_report_json                    // channel: [ tuple val(group), val(meta) file("pharmcat.report.json") ]
+        targets_depth           = GET_PGX_REPORT.out.targets_depth                      // channel: [ tuple val(group), val(meta) file(".targets.depth.tsv") ]
+        versions                = ch_versions                                           // channel: [ path(versions.yml) ]
 }

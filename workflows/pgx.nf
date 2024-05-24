@@ -62,10 +62,13 @@ workflow PGX {
 
     emit:
         report                  = PHARMACO_GENOMICS.out.pgx_report              // channel: [ val(group), val(meta), file(pgx-report) ]
+        // pharmcat_pgx_regions    = PHARMACO_GENOMICS.out.pharmcat_pgx_regions    // channel: [ tuple val(group), val(meta) file("pharmcat_preprocessed.vcf") ]
         pharmcat_preprocessed   = PHARMACO_GENOMICS.out.pharmcat_preprocessed   // channel: [ tuple val(group), val(meta) file("pharmcat_preprocessed.vcf") ]
         pharmcat_report         = PHARMACO_GENOMICS.out.pharmcat_report         // channel: [ tuple val(group), val(meta) file("pharmcat.html") ]
         pharmcat_pheno_json     = PHARMACO_GENOMICS.out.pharmcat_pheno_json     // channel: [ tuple val(group), val(meta) file("pharmcat.phenotype.json") ]
-        pharmcat_macth_json     = PHARMACO_GENOMICS.out.pharmcat_macth_json     // channel: [ tuple val(group), val(meta) file("pharmcat.match.json") ]
+        pharmcat_match_json     = PHARMACO_GENOMICS.out.pharmcat_match_json     // channel: [ tuple val(group), val(meta) file("pharmcat.match.json") ]
+        pharmcat_match_html     = PHARMACO_GENOMICS.out.pharmcat_match_html     // channel: [ tuple val(group), val(meta) file("pharmcat.match.html") ]
+        pharmcat_report_json     = PHARMACO_GENOMICS.out.pharmcat_report_json   // channel: [ tuple val(group), val(meta) file("pharmcat.match.html") ]
         multiqc_report          = multiqc_reports                               // channel: [ tuple val(group), val(meta) file("multiqc.html") ]
         multiqc_data            = MULTIQC.out.data                              // channel: [ tuple val(group), val(meta) file("multiqc_data") ]
         multiqc_plots           = MULTIQC.out.plots                             // channel: [ tuple val(group), val(meta) file("multiqc_plots") ]

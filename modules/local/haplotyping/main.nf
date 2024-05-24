@@ -1,5 +1,6 @@
 process GATK_HAPLOTYPING {
-    label 'process_high'
+    label 'process_medium_cpus'
+    label 'process_medium_memory'
     label 'stage'
     tag "$meta.group"
 
@@ -51,7 +52,8 @@ process GATK_HAPLOTYPING {
 
 
 process SENTIEON_HAPLOTYPING {
-    label 'process_high'
+    label 'process_medium_cpus'
+    label 'process_medium_memory'
     label 'stage'
     tag "$meta.group"
 
