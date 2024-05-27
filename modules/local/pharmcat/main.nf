@@ -4,11 +4,13 @@ process PHARMCAT_PREPROCESSING {
     tag "$meta.group"
 
     input:
-        tuple val(group), val(meta), file(vcf) 
+        tuple val(group), val(meta), file(vcf), file(tbi)
 
     output:
-        tuple val(group), val(meta), file("*.pharmcat.preprocessed.vcf"),    emit: pharmcat_preprocessed
-        path "versions.yml",                                                emit: versions
+        tuple val(group), val(meta), file("*.pharmcat.preprocessed.vcf"),   emit: pharmcat_preprocessed_vcf
+        // tuple val(group), val(meta), file("*.pharmcat.pgx_regions.vcf.bgz"), file("*.pharmcat.pgx_regions.vcf.bgz.csi"),    emit: pharmcat_pgx_regions
+        // tuple val(group), val(meta), file("*.pharmcat.normalized.vcf.bgz"), file("*.pharmcat.normalized.vcf.bgz.csi"),      emit: pharmcat_normalized
+        path "versions.yml",                                                                                                emit: versions
 
     when:
         task.ext.when == null || task.ext.when
@@ -17,12 +19,12 @@ process PHARMCAT_PREPROCESSING {
         def args    = task.ext.args   ?: ''
         def prefix  = task.ext.prefix ?: "${meta.group}"
         """
-        /pharmcat/pharmcat_vcf_preprocessor.py -vcf $vcf --base-filename ${prefix}.pharmcat $args
+        pharmcat_vcf_preprocessor.py -vcf $vcf --base-filename ${prefix}.pharmcat $args
         gunzip -c ${prefix}.pharmcat.preprocessed.vcf.bgz > ${prefix}.pharmcat.preprocessed.vcf
 
         cat <<-END_VERSIONS > versions.yml
         "${task.process}":
-            pharmcat_vcf_preprocessor: \$(/pharmcat/pharmcat_vcf_preprocessor.py -V 2>&1 | sed -e 's/PharmCAT VCF Preprocessor //g')
+            pharmcat_vcf_preprocessor: \$(pharmcat_vcf_preprocessor.py -V 2>&1 | sed -e 's/PharmCAT VCF Preprocessor //g')
         END_VERSIONS
         """
 
@@ -33,7 +35,7 @@ process PHARMCAT_PREPROCESSING {
 
         cat <<-END_VERSIONS > versions.yml
         "${task.process}":
-            pharmcat_vcf_preprocessor: \$(/pharmcat/pharmcat_vcf_preprocessor.py -V 2>&1 | sed -e 's/PharmCAT VCF Preprocessor //g')
+            pharmcat_vcf_preprocessor: \$(pharmcat_vcf_preprocessor.py -V 2>&1 | sed -e 's/PharmCAT VCF Preprocessor //g')
         END_VERSIONS
         """
 
@@ -50,8 +52,10 @@ process PHARMCAT {
 
     output:
         tuple val(group), val(meta), file("*.phenotype.json"),  emit: pharmcat_pheno_json
-        tuple val(group), val(meta), file("*.match.json"),      emit: pharmcat_macth_json
+        tuple val(group), val(meta), file("*.match.json"),      emit: pharmcat_match_json
+        tuple val(group), val(meta), file("*.match.html"),      emit: pharmcat_match_html
         tuple val(group), val(meta), file("*.report.html"),     emit: pharmcat_report
+        tuple val(group), val(meta), file("*.report.json"),     emit: pharmcat_report_json
         path "versions.yml",                                    emit: versions
 
     when:
@@ -61,7 +65,7 @@ process PHARMCAT {
         def args    = task.ext.args   ?: ''
         def prefix  = task.ext.prefix ?: "${meta.group}"
         """
-        /pharmcat/pharmcat -vcf  $vcf --base-filename ${prefix}.pharmcat $args
+        pharmcat -vcf  $vcf --base-filename ${prefix}.pharmcat $args
 
         cat <<-END_VERSIONS > versions.yml
         "${task.process}":
@@ -74,6 +78,7 @@ process PHARMCAT {
         """
         touch ${prefix}.pharmcat.phenotype.json
         touch ${prefix}.match.json
+        touch ${prefix}.match.html
         touch ${prefix}.report.html
 
         cat <<-END_VERSIONS > versions.yml

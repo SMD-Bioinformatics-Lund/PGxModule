@@ -5,3 +5,4 @@ From: ubuntu:18.04
 
     apt-get -y update
     apt-get -y install samtools
+    apt-get -y install tabix

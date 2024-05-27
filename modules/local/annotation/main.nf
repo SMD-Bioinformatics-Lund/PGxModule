@@ -17,7 +17,7 @@ process BCFTOOLS_ANNOTATION {
         def args    = task.ext.args   ?: ''
         def prefix  = task.ext.prefix ?: "${meta.group}"
         """
-        bcftools annotate --threads ${task.cpus} $args -o ${prefix}".haplotypes.anno.vcf" $vcf
+        bcftools annotate --threads ${task.cpus} $args -o ${prefix}".filtered.ontarget.haplotypes.anno.vcf" $vcf
 
         cat <<-END_VERSIONS > versions.yml
         "${task.process}":
@@ -28,7 +28,7 @@ process BCFTOOLS_ANNOTATION {
     stub:
         def prefix  = task.ext.prefix ?: "${meta.group}"
         """
-        touch ${prefix}".haplotypes.anno.vcf"
+        touch ${prefix}".filtered.ontarget.haplotypes.anno.vcf"
 
         cat <<-END_VERSIONS > versions.yml
         "${task.process}":

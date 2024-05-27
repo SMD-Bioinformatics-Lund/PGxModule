@@ -1,3 +1,8 @@
+# v2.0.0
+- Major change to the process flow
+- Updated pharmact to v2.12.0
+- Updated ReadMe.md
+
 # v1.1.1
 - Updated QC text in the report
 
