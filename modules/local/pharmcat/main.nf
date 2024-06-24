@@ -43,7 +43,7 @@ process PHARMCAT_PREPROCESSING {
 
 
 process PHARMCAT {
-    label 'process_single'
+    label 'process_medium'
     label 'stage'
     tag "$meta.group"
 
@@ -69,7 +69,7 @@ process PHARMCAT {
 
         cat <<-END_VERSIONS > versions.yml
         "${task.process}":
-            PharmCAT: \$(/pharmcat/pharmcat --version 2>&1 | sed -e 's/PharmCAT //g')
+            PharmCAT: \$(pharmcat --version 2>&1 | sed -e 's/PharmCAT //g')
         END_VERSIONS
         """
 
@@ -83,7 +83,7 @@ process PHARMCAT {
 
         cat <<-END_VERSIONS > versions.yml
         "${task.process}":
-            PharmCAT: \$(/pharmcat/pharmcat --version 2>&1 | sed -e 's/PharmCAT //g')
+            PharmCAT: \$(pharmcat --version 2>&1 | sed -e 's/PharmCAT //g')
         END_VERSIONS
         """
 
