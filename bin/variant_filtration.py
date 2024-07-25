@@ -14,6 +14,9 @@ def filter_variants(vcf, read_ratio, depth, output):
         f"AR{read_ratio}", None, None, f"Ratio of ref/alt reads lower than {read_ratio}"
     )
     new_header.filters.add(f"DP{depth}", None, None, f"DP is lower than {depth}x")
+    new_header.filters.add(
+        f"NO_AD", None, None, f"No Allele depth for the given variant"
+    )
     vcf_out = VariantFile(output, "w", header=new_header)
 
     for record in vcf_in.fetch():
@@ -27,10 +30,13 @@ def filter_variants(vcf, read_ratio, depth, output):
             record.filter.add(f"DP{depth}")
         elif len(ad) == 2:
             n_ref, n_alt = ad
-            if n_alt / (n_ref + n_alt) < read_ratio:
-                record.filter.add(f"AR{read_ratio}")
-            else:
-                record.filter.add(f"PASS")
+            try:
+                if n_alt / (n_ref + n_alt) < read_ratio:
+                    record.filter.add(f"AR{read_ratio}")
+                else:
+                    record.filter.add(f"PASS")
+            except ZeroDivisionError as e:
+                record.filter.add(f"NO_AD")
 
         vcf_out.write(record)
 
