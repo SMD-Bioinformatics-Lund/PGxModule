@@ -1,3 +1,5 @@
+# 2.0.2
+   - Fixed Zero divison error when there is no allele depth in the variant calls (#43)
 # 2.0.1
    - Updated Config
    - Fixed Pharmacat memory bug
