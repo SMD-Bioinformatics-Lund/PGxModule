@@ -4,8 +4,7 @@ process ONTARGET_BAM {
     tag "$meta.group"
 
     input:
-        tuple val(group), val(meta), file(bam), file(bai) 
-        path pgx_ontarget_padded_bed
+        tuple val(group), val(meta), file(bam), file(bai)
 
     output:
         tuple val(group),  val(meta), file("*.dedup.ontarget.pgx.bam"), file("*.dedup.ontarget.pgx.bam.bai"),   emit: bam_ontarget
@@ -18,7 +17,7 @@ process ONTARGET_BAM {
         def args    = task.ext.args   ?: ''
         def prefix  = task.ext.prefix ?: "${meta.group}"
         """
-        samtools view $args -b $bam -L $pgx_ontarget_padded_bed > ${prefix}.dedup.ontarget.pgx.bam
+        samtools view $args -b $bam > ${prefix}.dedup.ontarget.pgx.bam
         samtools index ${prefix}.dedup.ontarget.pgx.bam
 
         cat <<-END_VERSIONS > versions.yml
@@ -46,7 +45,6 @@ process ONTARGET_VCF {
 
     input:
         tuple val(group), val(meta), file(vcf), file(tbi) 
-        path pgx_ontarget_padded_bed
 
     output:
         tuple val(group), val(meta), file("*.ontarget.filtered.haplotypes.vcf.gz"), file("*.ontarget.filtered.haplotypes.vcf.gz.tbi"),  emit: vcf_ontarget
@@ -59,7 +57,7 @@ process ONTARGET_VCF {
         def args    = task.ext.args   ?: ''
         def prefix  = task.ext.prefix ?: "${meta.group}"
         """
-        bcftools view $args -o ${prefix}.ontarget.filtered.haplotypes.vcf -R $pgx_ontarget_padded_bed $vcf
+        bcftools view $args -o ${prefix}.ontarget.filtered.haplotypes.vcf $vcf
         bgzip -c ${prefix}.ontarget.filtered.haplotypes.vcf > ${prefix}.ontarget.filtered.haplotypes.vcf.gz
         tabix -p vcf ${prefix}.ontarget.filtered.haplotypes.vcf.gz
 

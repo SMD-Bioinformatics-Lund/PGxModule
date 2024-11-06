@@ -42,7 +42,7 @@ process PHARMCAT_PREPROCESSING {
 }
 
 
-process PHARMCAT {
+process PHARMCAT_RUN {
     label 'process_medium'
     label 'stage'
     tag "$meta.group"
@@ -80,6 +80,7 @@ process PHARMCAT {
         touch ${prefix}.match.json
         touch ${prefix}.match.html
         touch ${prefix}.report.html
+        touch ${prefix}.report.json
 
         cat <<-END_VERSIONS > versions.yml
         "${task.process}":

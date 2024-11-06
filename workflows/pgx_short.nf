@@ -19,29 +19,17 @@ include { RUN_MULTIQC                   } from '../subworkflows/local/multiqc'
 
 csv = file(params.csv)
 
-workflow PGX_FULL {
+workflow PGX_SHORT {
 
     take:
-        fastq_input
+        bam_input
         samples
 
     main:
         ch_versions = Channel.empty()
 
-        // ALIGNMENT
-        ALIGN_SENTIEON ( fastq_input ).set { ch_mapped }
-        ch_versions = ch_versions.mix(ch_mapped.versions)
-
-        QC ( 
-            ch_mapped.qc_out, 
-            ch_mapped.bam_lowcov
-        ).set { ch_qc }
-        ch_versions = ch_versions.mix(ch_qc.versions)
-
-        aligned_bam = ch_mapped.bam_umi.map { it -> it[0..3] }
-
         // HAPLOTYPING
-        HAPLOTYPING ( aligned_bam ).set { ch_haplotypes }
+        HAPLOTYPING ( bam_input ).set { ch_haplotypes }
         ch_versions = ch_versions.mix(ch_haplotypes.versions)
 
         // PHARMCAT
@@ -50,7 +38,7 @@ workflow PGX_FULL {
 
         // ONTARGET
         ONTARGET ( 
-            aligned_bam, 
+            bam_input, 
             ch_haplotypes.filtered_haplotypes
         ).set { ch_ontarget }
 
@@ -59,7 +47,7 @@ workflow PGX_FULL {
             ontarget_bams           = ch_ontarget.ontarget_bam
             ontarget_haplotypes     = ch_ontarget.ontarget_vcf
         } else {
-            ontarget_bams           = aligned_bam
+            ontarget_bams           = bam_input
             ontarget_haplotypes     = ch_haplotypes.filtered_haplotypes
         }
 
@@ -86,12 +74,10 @@ workflow PGX_FULL {
         ch_versions = ch_versions.mix(ch_report.versions)
 
         // MODULE: Software Versions
-
         CUSTOM_DUMPSOFTWAREVERSIONS (
             ch_versions.unique().collectFile(name: 'collated_versions.yml'),
             samples
         )
-
 
         // SUBWORKFLOW: MULTIQC
         fastqc_files = Channel.empty()
@@ -101,11 +87,10 @@ workflow PGX_FULL {
             CUSTOM_DUMPSOFTWAREVERSIONS.out.mqc_yml.collect(),
             ch_report.targets_depth,
             fastqc_files,
-        ) .set { ch_multiqc }
+        ).set { ch_multiqc }
 
 
     emit:
-        umi_bam                     = ch_mapped.bam_umi                                 // channel: [ tuple val(group), val(meta), file("aligned.bam"), file("aligned.bam.bai") ]
         report                      = ch_report.pgx_report                              // channel: [ val(group), val(meta), file(pgx-report) ]
         pharmcat_preprocessed       = ch_pharmcat.pharmcat_preprocessed                 // channel: [ tuple val(group), val(meta) file("pharmcat_preprocessed.vcf") ]
         pharmcat_report             = ch_pharmcat.pharmcat_report                       // channel: [ tuple val(group), val(meta) file("pharmcat.html") ]
