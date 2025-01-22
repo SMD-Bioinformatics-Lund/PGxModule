@@ -1,4 +1,28 @@
-# V1.0.0
+# 2.0.2
+   - Fixed Zero divison error when there is no allele depth in the variant calls (#43)
+# 2.0.1
+   - Updated Config
+   - Fixed Pharmacat memory bug
+
+# v2.0.0
+   - Major change to the process flow
+   - Updated pharmact to v2.12.0
+   - Updated ReadMe.md
+
+# v1.1.1
+   - Updated QC text in the report
+
+# v1.1.0
+   - Added pharmCAT module to the pipeline
+
+# v1.0.2
+   - Updated DPYD HapB3 haplotype related rsids (rs75017182 and rs56038477)
+   - Main target bed regions are padded with 20bp up and down stream
+  
+# v1.0.1
+   - The report will now include a telephone number for medical information support related to its contents.
+
+# v1.0.0
 1. Added and updated various features:
    - Added license and workflow image.
    - Implemented nf-core style stubs.

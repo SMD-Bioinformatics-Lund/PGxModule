@@ -47,7 +47,7 @@ process DEPTH_OF_TARGETS {
     tag "$meta.group"
 
     input:
-        tuple val(group), val(meta), file(bam), file(bai), file(target_interval_list)
+        tuple val(group), val(meta), file(bam), file(bai)
 
     output:
         tuple val(group), val(meta), file("*.pgx_depth_at_missing.gdf"),    emit: pgx_depth_at_missing
@@ -68,8 +68,7 @@ process DEPTH_OF_TARGETS {
         """
         java -Xmx${avail_mem}M -jar /usr/GenomeAnalysisTK.jar -T DepthOfCoverage $args \
         -I $bam \
-        -o ${prefix}.pgx_depth_at_missing.gdf \
-        -L $target_interval_list
+        -o ${prefix}.pgx_depth_at_missing.gdf
 
         cat <<-END_VERSIONS > versions.yml
         "${task.process}":
@@ -135,7 +134,6 @@ process DEPTH_OF_BAITS {
 
     input:
         tuple val(group), val(meta), file(bam), file(bai) 
-        path padded_baits_interval_list
 
     output:
         tuple val(group), val(meta), file("*.pgx.gdf"), emit: padded_baits_list
@@ -157,8 +155,7 @@ process DEPTH_OF_BAITS {
         # NOTE: does not work with openjdk-11, openjdk-8 works
         java -Xmx${avail_mem}M -jar /usr/GenomeAnalysisTK.jar -T DepthOfCoverage $args \
         -I $bam \
-        -o ${prefix}.pgx.gdf \
-        -L $padded_baits_interval_list
+        -o ${prefix}.pgx.gdf 
 
         cat <<-END_VERSIONS > versions.yml
         "${task.process}":

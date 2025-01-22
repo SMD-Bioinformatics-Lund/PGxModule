@@ -3,49 +3,54 @@
 // might need to add a check to csv? //
 include { CSV_CHECK      } from '../../modules/local/check_input/main'
 
+
 workflow CHECK_INPUT {
-	take:
-		csv		// file(csv)
+    take:
+        csv     // file(csv)
 
-	main:
-		CSV_CHECK ( csv )
-		checkedCsv = CSV_CHECK.out.csv.splitCsv( header:true, sep:',').set { csvmap }
+    main:
+        CSV_CHECK ( csv )
+        checkedCsv = CSV_CHECK.out.csv.splitCsv( header:true, sep:',').set { csvmap }
 
-		bam		= csvmap.map { create_bam_channel(it) }
-		meta	= csvmap.map { create_samples_channel(it) }
+        bam_fq_ch   = csvmap.map { create_input_channel(it) }
+        meta        = csvmap.map { create_samples_channel(it) }
 
-	emit:
-		bam        	// channel: [ val(meta), [ bam, bai ] ]
-		meta        // channel: [ sample_id, sex, phenotype, paternal_id, maternal_id, case_id ]
+    emit:
+        bam_fq_ch       // channel: [ val(group), val(meta), read1, read2. bam, bai ]
+        meta            // channel: [ val(group), val(meta) ]
 
 }
 
-// Function to get list of [ meta, [ bam, bai ] ]
-def create_bam_channel(LinkedHashMap row) {
-	// create meta map
-	def meta = [:]
-	meta.group              = row.group
-	meta.id					= row.id
-	meta.type               = row.type
-	meta.clarity_sample_id  = (row.containsKey("clarity_sample_id") ? row.clarity_sample_id : None)
-	meta.ffpe               = (row.containsKey("ffpe") ? row.ffpe : false)
-	meta.purity             = (row.containsKey("purity") ? row.purity : false)
-	// add path(s) of the bam file(s) to the meta map
-	def bam_meta = []
-	bam_meta = [row.group, meta, file(row.bam), file(row.bai) ]
+// Function to get list of [ group, meta, read1, read2, bam, bai  ]
+def create_input_channel(LinkedHashMap row) {
+    // create meta map
+    def meta = [:]
+    meta.group              = row.group
+    meta.id                 = row.id
+    meta.type               = row.type
+    meta.clarity_sample_id  = (row.containsKey("clarity_sample_id") ? row.clarity_sample_id : None)
+    meta.ffpe               = (row.containsKey("ffpe") ? row.ffpe : false)
+    meta.purity             = (row.containsKey("purity") ? row.purity : false)
+    // add path(s) of the bam file(s) to the meta map
+    def input_ch = []
+    if (row.containsKey("bam")) {
+        input_ch = [row.group, meta, [], [], file(row.bam), file(row.bai)]
+    } else if (row.containsKey("read1")) {
+        input_ch = [row.group, meta, file(row.read1), file(row.read2), [], []]
+    }
 
-	return bam_meta
+    return input_ch
 }
 
 // Function to get a list of metadata (e.g. pedigree, case id) from the sample; [ meta ]
 def create_samples_channel(LinkedHashMap row) {
-	def meta                = [:]
-	meta.id                 = row.id
-	meta.group				= row.group
-	meta.type               = row.type
-	meta.clarity_sample_id  = (row.containsKey("clarity_sample_id") ? row.clarity_sample_id : None)
-	meta.ffpe               = (row.containsKey("ffpe") ? row.ffpe : false)
-	meta.purity             = (row.containsKey("purity") ? row.purity : false)
-	def sample_meta = [row.group, meta]
-	return sample_meta
+    def meta                = [:]
+    meta.id                 = row.id
+    meta.group              = row.group
+    meta.type               = row.type
+    meta.clarity_sample_id  = (row.containsKey("clarity_sample_id") ? row.clarity_sample_id : None)
+    meta.ffpe               = (row.containsKey("ffpe") ? row.ffpe : false)
+    meta.purity             = (row.containsKey("purity") ? row.purity : false)
+    def sample_meta = [row.group, meta]
+    return sample_meta
 }

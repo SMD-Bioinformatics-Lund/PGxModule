@@ -7,8 +7,8 @@ process BCFTOOLS_ANNOTATION {
         tuple val(group), val(meta), file(vcf), file(tbi)
 
     output:
-        tuple val(group), val(meta), file("*.haplotypes.anno.vcf"), emit: annotations
-        path "versions.yml",                                        emit: versions
+        tuple val(group), val(meta), file("*.anno.vcf"),    emit: annotations
+        path "versions.yml",                                emit: versions
 
     when:
         task.ext.when == null || task.ext.when
@@ -16,8 +16,9 @@ process BCFTOOLS_ANNOTATION {
     script:
         def args    = task.ext.args   ?: ''
         def prefix  = task.ext.prefix ?: "${meta.group}"
+        def suffix  = task.ext.suffix ?: "filtered.haplotypes"
         """
-        bcftools annotate --threads ${task.cpus} $args -o ${prefix}".haplotypes.anno.vcf" $vcf
+        bcftools annotate --threads ${task.cpus} $args -o ${prefix}.${suffix}.anno.vcf $vcf
 
         cat <<-END_VERSIONS > versions.yml
         "${task.process}":
@@ -27,8 +28,9 @@ process BCFTOOLS_ANNOTATION {
 
     stub:
         def prefix  = task.ext.prefix ?: "${meta.group}"
+        def suffix  = task.ext.suffix ?: ".filtered.haplotypes"
         """
-        touch ${prefix}".haplotypes.anno.vcf"
+        touch ${prefix}.${suffix}.anno.vcf
 
         cat <<-END_VERSIONS > versions.yml
         "${task.process}":
