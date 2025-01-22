@@ -34,5 +34,4 @@ create_pgx_samplesheet.sh
 bin/report_template.txt
 bin/snakemake_report.py
 bin/pdf.py
-
 subworkflows/local/pharmacoGenomics.nf.backup
