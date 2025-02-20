@@ -1,4 +1,4 @@
-process BWA_UMI {
+process SENTIEON_BWA_UMI {
     label 'process_alot'
     label 'scratch'
     label 'stage'
@@ -86,7 +86,7 @@ process BWA_UMI {
         """
 }
 
-process MARKDUP {
+process SENTIEON_MARKDUP {
     label 'process_very_high'
     label 'scratch'
     label 'stage'
@@ -147,7 +147,7 @@ process MARKDUP {
         """
 }
 
-process BQSR_UMI {
+process SENTIEON_BQSR_UMI {
     label 'process_high'
     label 'scratch'
     label 'stage'
@@ -250,7 +250,7 @@ process SENTIEON_QC {
         """
 }
 
-process TNSCOPE {
+process SENTIEON_TNSCOPE {
     label "process_medium"
     tag "$group"
 

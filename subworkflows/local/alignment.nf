@@ -1,25 +1,25 @@
 #!/usr/bin/env nextflow
 
-include { BWA_UMI                } from '../../modules/local/sentieon/main'
-include { MARKDUP                } from '../../modules/local/sentieon/main'
-include { BQSR_UMI               } from '../../modules/local/sentieon/main'
-include { SENTIEON_QC            } from '../../modules/local/sentieon/main'
+include { SENTIEON_BWA_UMI                } from '../../modules/local/sentieon/main'
+include { SENTIEON_MARKDUP                } from '../../modules/local/sentieon/main'
+include { SENTIEON_BQSR_UMI               } from '../../modules/local/sentieon/main'
+include { SENTIEON_SENTIEON_QC            } from '../../modules/local/sentieon/main'
 
 
-workflow ALIGN_SENTIEON {
+workflow ALIGN {
     take: 
         fastq_input         // channel: [mandatory] [ val(group), val(meta), read1, read2  ]
 
     main:
         ch_versions = Channel.empty()
 
-        BWA_UMI ( fastq_input )
+        SENTIEON_BWA_UMI ( fastq_input )
         ch_versions = ch_versions.mix(BWA_UMI.out.versions)
 
-        MARKDUP ( BWA_UMI.out.bam_umi_markdup )
+        SENTIEON_MARKDUP ( BWA_UMI.out.bam_umi_markdup )
         ch_versions = ch_versions.mix(MARKDUP.out.versions)
 
-        BQSR_UMI ( BWA_UMI.out.bam_umi )
+        SENTIEON_BQSR_UMI ( BWA_UMI.out.bam_umi )
         ch_versions = ch_versions.mix(BQSR_UMI.out.versions)
 
         SENTIEON_QC ( MARKDUP.out.bam_qc )

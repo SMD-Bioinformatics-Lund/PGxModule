@@ -1,4 +1,4 @@
-process FASTP {
+process TRIM {
     label 'process_very_high'
     label 'max_errors'
     label 'scratch'

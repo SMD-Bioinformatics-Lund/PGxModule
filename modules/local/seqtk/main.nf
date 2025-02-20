@@ -1,4 +1,4 @@
-process SEQTK {
+process SUB_SAMPLE {
     label 'scratch'
     label 'stage'
     tag "${meta.id}"

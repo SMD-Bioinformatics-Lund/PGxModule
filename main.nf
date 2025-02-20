@@ -5,6 +5,7 @@ nextflow.enable.dsl = 2
 include { CHECK_INPUT       } from './subworkflows/local/create_meta'
 include { PGX_FULL          } from './workflows/pgx'
 include { PGX_SHORT         } from './workflows/pgx_short'
+include { PGX_PANEL         } from './workflows/pgx_panel'
 
 println(params.genome_file)
 csv = file(params.csv)
@@ -30,10 +31,13 @@ workflow {
     bam_ch.view()
 
     // WORKFLOW: PGX_FULL
-    PGX_FULL(fastq_ch, samples)
+    // PGX_FULL(fastq_ch, samples)
 
     // WORKFLOW: PGX_SHORT
-    PGX_SHORT(bam_ch, samples)
+    // PGX_SHORT(bam_ch, samples)
+
+    // WORKFLOW: PGX_PANEL
+    PGX_PANEL(fastq_ch, bam_ch, samples)
 }
 
 

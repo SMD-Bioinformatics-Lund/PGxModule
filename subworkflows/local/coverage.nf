@@ -3,6 +3,7 @@
 include { DEPTH_OF_TARGETS                      } from '../../modules/local/summary/main'
 include { DEPTH_OF_BAITS                        } from '../../modules/local/summary/main'
 include { APPEND_ID_TO_GDF                      } from '../../modules/local/summary/main'
+include { DEPTH as SAMTOOLS_DEPTH               } from '../../modules/local/samtools/main'
 
 workflow COVERAGE {
 
@@ -23,6 +24,10 @@ workflow COVERAGE {
         // Append the id to the gdf
         APPEND_ID_TO_GDF ( DEPTH_OF_TARGETS.out.pgx_depth_at_missing )
         ch_versions = ch_versions.mix(APPEND_ID_TO_GDF.out.versions)
+
+        // samtools depth
+        SAMTOOLS_DEPTH ( bam )
+        ch_versions = ch_versions.mix(DEPTH.out.versions)
 
 
     emit:
