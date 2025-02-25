@@ -3,8 +3,8 @@
 nextflow.enable.dsl = 2
 
 include { CHECK_INPUT       } from './subworkflows/local/create_meta'
-include { PGX_FULL          } from './workflows/pgx'
-include { PGX_SHORT         } from './workflows/pgx_short'
+// include { PGX_FULL          } from './workflows/pgx'
+// include { PGX_SHORT         } from './workflows/pgx_short'
 include { PGX_PANEL         } from './workflows/pgx_panel'
 
 println(params.genome_file)

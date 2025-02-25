@@ -18,6 +18,8 @@ tmp/
 #envs
 envs/*simg
 envs/*sif
+envs/recepies/*sif
+envs/recepies/*simg
 .venv/
 venv/
 envs/requirements.txt

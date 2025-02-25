@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 import argparse
 import pandas as pd
 import numpy as np
@@ -98,13 +99,12 @@ def plot_gene(
     plt.title(f"{sample_name} - {gene_name}")
     plt.legend()
     plt.grid(True, linestyle="--", linewidth=0.5)
-    plt.savefig(f"{outfolder}/{sample_name}_depth_{gene_name}.png")
+    plt.savefig(f"{outfolder}/{sample_name}.depth_{gene_name}.png")
     plt.close()
 
 
-def generate_html_report(sample_id: str, coverage_stats: dict, output_dir: str):
+def generate_html_report(sample_id: str, coverage_stats: dict, html_file: str):
     """Generate an HTML report summarizing the coverage statistics."""
-    html_file = os.path.join(output_dir, f"{sample_id}_coverage_report.html")
     with open(html_file, "w") as f:
         f.write("<html><head><title>Coverage Report</title></head><body>")
         f.write(f"<h1>Coverage Report for {sample_id}</h1>")
@@ -150,6 +150,7 @@ def calculate_coverage(
 def main():
     parser = argparse.ArgumentParser(description="Coverage Analysis Tool")
     parser.add_argument("--sample_id", type=str, help="Sample Identifier")
+    parser.add_argument("--out_prefix", type=str, help="Prefix for the output file names")
     parser.add_argument("--depth_file", type=str, help="Depth file path")
     parser.add_argument("--bed_file", type=str, help="BED file path")
     parser.add_argument("--snp_bed_file", type=str, help="SNP BED file path")
@@ -157,6 +158,9 @@ def main():
     parser.add_argument("--threshold", type=int, help="Coverage threshold")
     parser.add_argument("--output_dir", type=str, help="Output directory for results")
     args = parser.parse_args()
+
+    if not args.output_dir:
+        args.output_dir = os.getcwd()
 
     # Read input files
     depth_df = read_depth_file(args.depth_file)
@@ -173,7 +177,8 @@ def main():
     )
 
     # Generate HTML report
-    generate_html_report(args.sample_id, coverage_stats, args.output_dir)
+    html_file = os.path.join(args.output_dir, f"{args.out_prefix}.coverage_report.html")
+    generate_html_report(args.sample_id, coverage_stats, html_file)
 
     # Generate gene coverage plots
     unique_genes = annotated_df["Gene"].unique()
@@ -184,12 +189,12 @@ def main():
             )
 
     # Save annotated depths
-    output_file = f"{args.output_dir}/{args.sample_id}_depth_annotated.csv"
+    output_file = f"{args.output_dir}/{args.out_prefix}.depth_annotated.csv"
     annotated_df.to_csv(output_file, index=False)
     print(f"Annotated depth file saved: {output_file}")
 
     # Save coverage statistics
-    stats_file = f"{args.output_dir}/{args.sample_id}_coverage_stats.txt"
+    stats_file = f"{args.output_dir}/{args.out_prefix}.coverage_stats.txt"
     with open(stats_file, "w") as f:
         f.write(f"Coverage Statistics for {args.sample_id}\n")
         for key, value in coverage_stats.items():
