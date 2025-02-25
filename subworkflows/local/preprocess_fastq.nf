@@ -1,6 +1,6 @@
 #!/usr/bin/env nextflow
 
-include { SUBSAMPLE             } from '../../modules/local/seqtk/main'
+include { SUB_SAMPLE             } from '../../modules/local/seqtk/main'
 include { TRIM                  } from '../../modules/local/fastp/main'
 
 
@@ -12,12 +12,12 @@ workflow PREPROCESS_FASTQ {
         ch_versions = Channel.empty()
 
         // Only sub-sample if meta.sub == value
-        SUBSAMPLE ( fastq.filter{ item -> item[1].sub != false } )
-        ch_versions = ch_versions.mix(SUBSAMPLE.out.versions)
+        SUB_SAMPLE ( fastq.filter{ item -> item[1].sub != false } )
+        ch_versions = ch_versions.mix(SUB_SAMPLE.out.versions)
 
 
         //combine with any sample that does not get sub-sampled
-        fastq_sample = SUBSAMPLE.out.fastq_sub.mix( fastq.filter{ item -> item[1].sub == false } )
+        fastq_sample = SUB_SAMPLE.out.fastq_sub.mix( fastq.filter{ item -> item[1].sub == false } )
 
         TRIM ( fastq_sample )
         // fastq_done = FASTP.out.fastq_trimmed

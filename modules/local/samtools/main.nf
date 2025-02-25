@@ -5,7 +5,7 @@ process DEPTH {
         tuple val(group), val(meta), file(bam), file(bai)
 
     output:
-        tuple val(group), val(meta), file("*.depth"),  emit: samtools_depth
+        tuple val(group), val(meta), file("*.depth"),  emit: depth
         path "versions.yml",                           emit: versions
 
     when:
@@ -34,3 +34,4 @@ process DEPTH {
         END_VERSIONS
         """
 }
+

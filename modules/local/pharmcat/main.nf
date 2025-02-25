@@ -89,3 +89,40 @@ process PHARMCAT_RUN {
         """
 
 }
+
+// process PHARMCAT_VCF_BED {
+//     label 'process_medium'
+//     label 'stage'
+//     tag "pharmcat_vcf_bed"
+
+//     output:
+//         path "*.bed",               emit: pharmcat_positions_bed
+//         path "versions.yml",        emit: versions
+
+//     when:
+//         task.ext.when == null || task.ext.when
+
+//     script:
+//         def args    = task.ext.args   ?: ''
+//         def prefix  = task.ext.prefix ?: "pharmcat_vcf_positions"
+//         """
+//         create_pharmcat_bed.py --output ${prefix}.bed $args
+
+//         cat <<-END_VERSIONS > versions.yml
+//         "${task.process}":
+//             python: \$(python --version | sed 's/.*\s//g')
+//         END_VERSIONS
+//         """
+
+//     stub:
+//         def prefix  = task.ext.prefix ?: "pharmcat_vcf_positions"
+//         """
+//         create_pharmcat_bed.py --output ${prefix}.bed $args
+
+//         cat <<-END_VERSIONS > versions.yml
+//         "${task.process}":
+//             python: \$(python --version | sed 's/.*\s//g')
+//         END_VERSIONS
+//         """
+
+// }
