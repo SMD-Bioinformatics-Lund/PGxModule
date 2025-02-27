@@ -1,178 +1,247 @@
+#!/usr/bin/env python3
 import argparse
 import gzip
-import os
-import sys
 from collections import defaultdict
-from typing import List
+import logging
 
-SUPPORTED_CALLERS: set[str] = {'freebayes', 'mutect2', 'tnscope', 'vardict', 'pindel', 'samtools', 'gatk-haplotyper', 'sentieon-haplotyper'}
+# Supported variant callers
+SUPPORTED_CALLERS = {
+    'freebayes', 'mutect2', 'tnscope', 'vardict', 'pindel',
+    'samtools', 'gatk-haplotyper', 'sentieon-haplotyper'
+}
 
-
+# ---------------------------
+# Parse Command-Line Arguments
+# ---------------------------
 def parse_args():
     parser = argparse.ArgumentParser(description="Aggregate multiple VCFs into one.")
-    parser.add_argument('--vcfs', required=True, help='Comma separated list of VCF files to aggregate')
+    parser.add_argument('--vcfs', required=True, help='Comma-separated list of VCF files to aggregate')
     parser.add_argument('--tumor-id', help='Tumor sample ID')
     parser.add_argument('--normal-id', help='Normal sample ID')
     parser.add_argument('--fluffify-pindel', action='store_true', help='Modify Pindel REF/ALT fields')
-    parser.add_argument('--sample-order', help='Comma separated list of sample order')
+    parser.add_argument('--sample-order', help='Comma-separated list of sample order')
     return parser.parse_args()
 
-
+# ---------------------------
+# Read VCF File
+# ---------------------------
 def read_vcf(file):
     metadata = []
     variants = []
-    with (gzip.open(file, 'rt') if file.endswith('.gz') else open(file)) as f:
+    sample_names = []
+
+    opener = gzip.open if file.endswith('.gz') else open
+    with opener(file, 'rt') as f:
         for line in f:
-            if line.startswith('##'):
+            if line.startswith("##"):
                 metadata.append(line.strip())
-            elif line.startswith('#CHROM'):
-                header = line.strip().split('\t')
+            elif line.startswith("#CHROM"):
+                header = line.strip().split("\t")
+                sample_names = header[9:]  # Extract sample names from header
             else:
-                variants.append(line.strip().split('\t'))
-    return metadata, header, variants
+                variants.append(line.strip().split("\t"))
 
+    return metadata, sample_names, variants
 
+# ---------------------------
+# Determine Variant Caller
+# ---------------------------
 def which_variantcaller(metadata):
     source = None
     for line in metadata:
-        if line.startswith('##source='):
-            source = line.split('##source=')[1].split(' ')[0].split('_')[0].lower()
-            break
-        elif line.startswith('##GATKCommandLine'):
+        if line.startswith("##GATKCommandLine="):
             source = "gatk-haplotyper"
             break
-        elif line.startswith('##SentieonCommandLine.Haplotyper'):
+        elif line.startswith("##SentieonCommandLine.Haplotyper"):
             source = "sentieon-haplotyper"
             break
-
+        elif line.startswith("##source="):
+            source = line.split("##source=")[1].split(" ")[0].split("_")[0].lower()
+            break
     for caller in SUPPORTED_CALLERS:
         if source and caller in source:
             return caller
     return "unknown"
 
-
+# ---------------------------
+# Summarize Filters
+# ---------------------------
 def summarize_filters(filters):
     non_pass = [f for f in filters if f not in {"PASS", "."}]
     return "PASS" if not non_pass else ";".join(non_pass)
 
-
-def is_weird_freebayes(var):
-    if isinstance(var, list) and len(var) > 8:
-        format_fields = var[8].split(':')
-        if "AD" in format_fields:
-            ad_index = format_fields.index("AD")
-            sample_data = var[9].split(':') if len(var) > 9 else []
-            return len(sample_data) <= ad_index or not sample_data[ad_index]
-    return True
-
-
-def aggregate_headers(headers):
-    return headers[0]
-
-
-def add_info_field(vcf_str, data):
-    parts = vcf_str.split('\t')
-    parts[7] += f";{data}"
-    return '\t'.join(parts)
-
-
-def excl_prefix(prefix, name):
-    return name if prefix == "DO_NOTHING" else name.lstrip(prefix)
-
-
+# ---------------------------
+# Add INFO Field
+# ---------------------------
 def add_info(var, key, val):
+    """ Mimics Perl's add_info: adds a key-value pair to the INFO field """
+    if 'INFO_order' not in var:
+        var['INFO_order'] = []
+    var['INFO_order'].append(key)
+    if 'info' not in var:
+        var['info'] = {}
     var['info'][key] = val
 
-
+# ---------------------------
+# Add Genotype Data
+# ---------------------------
 def add_gt(var, sample, key, val):
-    var['format'] = var.get('format', [])
-    if key not in var['format']:
-        var['format'].append(key)
-    for gt in var['samples']:
-        if gt['_sample_id'] == sample:
-            gt[key] = val
+    """ Mimics Perl's add_gt: adds FORMAT key and assigns genotype values per sample """
+    if 'FORMAT' not in var:
+        var['FORMAT'] = []
+    if key not in var['FORMAT']:
+        var['FORMAT'].append(key)
+    for format_value in var.get('FORMAT_VAL', []):
+        if format_value.get('_sample_id') == sample:
+            format_value[key] = val
 
-
+# ---------------------------
+# Fix Genotype (FORMAT) Fields
+# ---------------------------
 def fix_gt(var, caller):
-    for sample in var['samples']:
-        gt_data = sample.split(':')
-        ref_dp, alt_dp = 0, 0
-        if caller in {'mutect2', 'tnscope', 'vardict', 'pindel'}:
-            if len(gt_data) > 1 and ',' in gt_data[1]:
-                ref_dp, alt_dp = map(int, gt_data[1].split(','))
-            af = alt_dp / (alt_dp + ref_dp) if alt_dp + ref_dp > 0 else 0
-            var['info']['VAF'] = str(af)
-            var['info']['VD'] = str(alt_dp)
-            var['info']['DP'] = str(alt_dp + ref_dp)
+    var['FORMAT'] = []  # Reset FORMAT field
 
+    for format_val in var['FORMAT_VAL']:
+        if caller in {"mutect2", "tnscope", "vardict", "pindel"}:
+            ref_dp, alt_dp = 0, 0
+            if 'AD' in format_val and format_val['AD']:
+                parts = format_val['AD'].split(",")
+                ref_dp = int(parts[0]) if parts[0] else 0
+                alt_dp = int(parts[1]) if len(parts) > 1 and parts[1] else 0
+            af = alt_dp / (alt_dp + ref_dp) if (alt_dp + ref_dp) > 0 else 0
+            add_gt(var, format_val['_sample_id'], "GT", format_val.get("GT", "./."))
+            add_gt(var, format_val['_sample_id'], "VAF", f"{af:.4f}")
+            add_gt(var, format_val['_sample_id'], "VD", str(alt_dp))
+            add_gt(var, format_val['_sample_id'], "DP", str(ref_dp + alt_dp))
+        elif caller in {"freebayes", "gatk-haplotyper", "sentieon-haplotyper"}:
+            vd = format_val.get("AD", ".,.").split(",")[1]
+            dp = format_val.get("DP", ".")
+            af = "."
+            gt = format_val.get("GT", "./.")
+            
+            try:
+                vf = round(float(int(vd) / int(dp)),4)
+            except:
+                vf = "."
+            
+            add_gt(var, format_val['_sample_id'], "GT", gt)
+            add_gt(var, format_val['_sample_id'], "VAF", str(vf))
+            add_gt(var, format_val['_sample_id'], "VD", str(vd))
+            add_gt(var, format_val['_sample_id'], "DP", str(dp))
+        else:
+            add_gt(var, format_val['_sample_id'], "DP", format_val.get("DP", "."))
+            add_gt(var, format_val['_sample_id'], "VD", format_val.get("AD", ".,.").split(",")[1])
+            add_gt(var, format_val['_sample_id'], "VAF", format_val.get("AF", "."))
+            add_gt(var, format_val['_sample_id'], "GT", format_val.get("GT", "."))
 
+# ---------------------------
+# Aggregate VCF Files
+# ---------------------------
 def aggregate_vcfs(vcf_files):
     aggregated = {}
     filters = defaultdict(set)
     all_filters = set()
     headers = []
+    global_samples = set()
 
     for vcf_file in vcf_files:
-        metadata, header, variants = read_vcf(vcf_file)
+        metadata, samples, variants = read_vcf(vcf_file)
         headers.append(metadata)
+        global_samples.update(samples)
         caller = which_variantcaller(metadata)
+        logging.info(f"Processing {vcf_file} (caller: {caller})")
 
         for var in variants:
-            chrom, pos, var_id, ref, alt, qual, filt, info, fmt, *samples = var
+            chrom, pos, var_id, ref, alt, qual, filt, info, fmt, *sample_data = var
+            info_dict = {item.split("=")[0]: item.split("=")[1] for item in info.split(";") if "=" in item}
+            dp_value = info_dict.get("DP", ".")
             key = f"{chrom}_{pos}_{ref}_{alt}"
-            
-            if caller == "freebayes" and is_weird_freebayes(var):
-                continue
-            
+
+            var_dict = {
+                'CHROM': chrom,
+                'POS': pos,
+                'ID': var_id,
+                'REF': ref,
+                'ALT': alt,
+                'QUAL': qual,
+                'filter': filt,
+                'info': {},
+                'INFO_order': []
+            }
+
+            fmt_keys = fmt.split(":")
+            gt_array = [{fmt_key: sample_data[i].split(":")[j] for j, fmt_key in enumerate(fmt_keys)} | {'_sample_id': sample} for i, sample in enumerate(samples)]
+            var_dict['FORMAT_VAL'] = gt_array
+
             if key in aggregated:
-                aggregated[key]['info']['variant_callers'] += f"|{caller}"
+                aggregated[key]['info']['variant_callers'] += f",{caller}"
+                aggregated[key]['info']['VC'] = int(aggregated[key]['info']['VC']) + 1
             else:
-                aggregated[key] = {
-                    'chrom': chrom, 'pos': pos, 'id': var_id, 'ref': ref, 'alt': alt,
-                    'qual': qual, 'filter': filt, 'info': {'variant_callers': caller},
-                    'format': fmt, 'samples': samples
-                }
-                
-                if caller == "MELT":
-                    add_info(aggregated[key], "custom", info)
-                
-                fix_gt(aggregated[key], caller)
-            
-            filters[key].update(filt.split(';'))
-            all_filters.update(filt.split(';'))
+                add_info(var_dict, "variant_callers", caller)
+                add_info(var_dict, "DP", dp_value)
+                add_info(var_dict, "VC", 1)
+                fix_gt(var_dict, caller)
+                aggregated[key] = var_dict
 
     for key in aggregated:
         aggregated[key]['filter'] = summarize_filters(filters[key])
-    
-    return aggregated, headers, sorted(all_filters)
 
+    return aggregated, headers, sorted(all_filters), list(global_samples)
 
-def print_header(filters, vcf_files):
+# ---------------------------
+# Print VCF Header
+# ---------------------------
+def print_header(filters, vcf_files, global_samples, command_line=None):
     print("##fileformat=VCFv4.2")
-    print(f"##origin={','.join(vcf_files)}")
+    print(f"##origin={vcf_files[0]}")
+    print(f"##sources={','.join(vcf_files)}")
     print('##INFO=<ID=variant_callers,Number=.,Type=String,Description="List of variant callers">')
+    print('##INFO=<ID=DP,Number=1,Type=Integer,Description="Read Depth">')
+    print('##INFO=<ID=VC,Number=1,Type=Integer,Description="Number of variant callers that called this variant">')
     print('##FORMAT=<ID=GT,Number=1,Type=String,Description="Genotype">')
     print('##FORMAT=<ID=DP,Number=1,Type=Integer,Description="Read Depth">')
     print('##FORMAT=<ID=VAF,Number=1,Type=Float,Description="ALT allele observation fraction">')
     print('##FORMAT=<ID=VD,Number=1,Type=Integer,Description="ALT allele observation count">')
-    for filt in filters:
-        print(f'##FILTER=<ID={filt},Description="{filt}">')
-    print("#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\tSAMPLES")
+    print(f'##CommandLine="{command_line}">')
+    for f in filters:
+        print(f'##FILTER=<ID={f},Description="{f}">')
+    print("#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\t" + "\t".join(sorted(global_samples)))
 
+# ---------------------------
+# Print VCF Variant Record
+# ---------------------------
+def vcfstr(v):
+    fields = [
+        v.get("CHROM", "."),
+        v.get("POS", "."),
+        v.get("ID", "."),
+        v.get("REF", "."),
+        v.get("ALT", "."),
+        v.get("QUAL", "."),
+        v.get("filter", "."),
+        ";".join([f"{key}={v['info'][key]}" for key in v.get("INFO_order", [])]),
+        ":".join(v.get("FORMAT", []))
+    ]
 
+    sample_fields = [":".join([gt.get(key, ".") for key in v.get("FORMAT", [])]) for gt in v.get("FORMAT_VAL", [])]
+    fields.append("\t".join(sample_fields))
+
+    print("\t".join(fields))
+
+# ---------------------------
+# Main Routine
+# ---------------------------
 def main():
     args = parse_args()
+    logging.basicConfig(level=logging.INFO)
+    command_line = " ".join(["aggregate_vcf.py"] + ["--" + k + " " + str(v) for k, v in vars(args).items() if v])
+    logging.info(command_line)
     vcf_files = args.vcfs.split(',')
-    
-    aggregated_vcfs, headers, filters = aggregate_vcfs(vcf_files)
-    print_header(filters, vcf_files)
-    
-    for key, record in aggregated_vcfs.items():
-        info_str = ';'.join(f"{k}={v}" for k, v in record['info'].items())
-        sample_str = '\t'.join(record['samples'])
-        print(f"{record['chrom']}\t{record['pos']}\t{record['id']}\t{record['ref']}\t{record['alt']}\t"
-              f"{record['qual']}\t{record['filter']}\t{info_str}\t{record['format']}\t{sample_str}")
+    aggregated_vcfs, headers, all_filters, global_samples = aggregate_vcfs(vcf_files)
+    print_header(all_filters, vcf_files, global_samples, command_line)
 
+    for key in aggregated_vcfs:
+        vcfstr(aggregated_vcfs[key])
 
 if __name__ == "__main__":
     main()

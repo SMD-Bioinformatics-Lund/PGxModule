@@ -68,6 +68,3 @@ ldd $(which python3) || true  # Debug: Check if it’s still dynamically linked
 python3 -m ensurepip
 python3 -m pip install --upgrade pip setuptools wheel
 python3 -m pip install pandas numpy matplotlib
-
-%runscript
-exec "$@"

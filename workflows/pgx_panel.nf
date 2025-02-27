@@ -51,7 +51,7 @@ workflow PGX_PANEL {
         ch_versions = ch_versions.mix(bam_aligned.versions)
 
         // Basically it will either have input from csv or from align sub workflow
-        bam_input.mix(bam_aligned.bam_umi).set{bam}
+        bam_input.mix(bam_aligned.bam_dedup).set{bam}
 
         // Variant calling
         VARIANT_CALLING ( bam )
@@ -65,8 +65,8 @@ workflow PGX_PANEL {
         ch_versions = ch_versions.mix(COVERAGE.out.versions)
 
         // Pharmcat
-        PHARMCAT ( VARIANT_CALLING.out.aggregate_vcf_tbi, COVERAGE.out.pc_panel_depth )
-        ch_versions = ch_versions.mix(PHARMCAT.out.versions)
+        // PHARMCAT ( VARIANT_CALLING.out.aggregate_vcf_tbi, COVERAGE.out.pc_panel_depth )
+        // ch_versions = ch_versions.mix(PHARMCAT.out.versions)
 
         // CNV calling
 

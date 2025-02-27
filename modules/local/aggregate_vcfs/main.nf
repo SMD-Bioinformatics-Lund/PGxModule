@@ -14,11 +14,9 @@ process AGGREGATE_VCFS {
 
     script:
         def prefix = task.ext.prefix ?: "${group}"
-        vcfs = vcfs.collect{ it.getAbsolutePath() }
-        sample_order = meta.id.join(",")
-
         """
-        aggregate_vcf.py --vcf $vcfs --sample-order ${sample_order} |vcf-sort -c > ${prefix}.agg.vcf
+        vcf_list=\$(echo $vcfs| tr -s " " ",")
+        aggregate_vcf.py --vcf \${vcf_list} --sample-order ${meta.id} | vcf-sort -c > ${prefix}.agg.vcf
         bgzip -c ${prefix}.agg.vcf > ${prefix}.agg.vcf.gz
         tabix -p vcf ${prefix}.agg.vcf.gz
         """
@@ -26,6 +24,8 @@ process AGGREGATE_VCFS {
     stub:
         def prefix = task.ext.prefix ?: "${group}"
         """
+        vcf_list=\$(echo $vcfs| tr -s " " ",")
+        echo "vcf_list: \${vcf_list}"
         touch ${group}.agg.vcf
         touch ${group}.agg.vcf.gz
         touch ${group}.agg.vcf.gz.tbi

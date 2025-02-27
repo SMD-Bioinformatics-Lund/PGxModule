@@ -18,7 +18,7 @@ process COVERAGE_REPORTS {
         def args    = task.ext.args ?: ''
         def prefix  = task.ext.prefix ?: "${meta.group}"
         """
-        coverage_report_and_plots.py --sample_id ${meta.id} --depth_file ${depth_file} --out_prefix ${prefix} $args 
+        coverage_reports_and_plots.py --sample_id ${meta.id} --depth_file ${depth_file} --out_prefix ${prefix} $args 
 
         cat <<-END_VERSIONS > versions.yml
         "${task.process}":
