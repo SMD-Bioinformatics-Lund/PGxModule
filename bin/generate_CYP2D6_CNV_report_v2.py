@@ -134,7 +134,6 @@ def plot_complete_panel(data_frame, gene_lims, sample_name, z_threshold, cn_thre
 
     print(f"Plot saved at {output_path}")
 
-
 def cnv_report(data_frame, gene_lims, sample_name, z_threshold, cn_threshold, prop_threshold, bed_file, flag_bed_file, output_dir):
     """
     Generates a CNV report based on z-score and copy number thresholds.
@@ -241,7 +240,6 @@ def cnv_report(data_frame, gene_lims, sample_name, z_threshold, cn_threshold, pr
 
     return cnv_df
 
-
 def plot_complete_panel_all_pos(data_frame, gene_lims, sample_name, chr_length_file, z_threshold, cn_threshold, output_dir):
     """
     Plots CNV data across all chromosome positions.
@@ -322,7 +320,6 @@ def plot_complete_panel_all_pos(data_frame, gene_lims, sample_name, chr_length_f
     plt.savefig(output_file, dpi=300)
     print(f"Plot saved as {output_file}")
     plt.close()
-
 
 def plot_chrs(data_frame, gene_lims, sample_name, chr_list, z_threshold, cn_threshold, output_dir):
     """
@@ -423,7 +420,6 @@ def plot_chrs(data_frame, gene_lims, sample_name, chr_list, z_threshold, cn_thre
         print(f"Plot saved as {output_file}")
         plt.close()
 
-
 def plot_region(data_frame, gene_lims, sample_name, z_threshold, cn_threshold, chrom, start_pos, end_pos, bed_file, output_dir):
     """
     Plots CNV data for a specific genomic region.
@@ -518,7 +514,6 @@ def plot_region(data_frame, gene_lims, sample_name, z_threshold, cn_threshold, c
     print(f"Plot saved as {output_file}")
     plt.close()
 
-
 def plot_cnv_regions(data_frame, gene_lims, sample_name, z_threshold, cn_threshold, cnv_regions, bed_file, output_dir):
     """
     Plots CNV regions by generating zoomed-in plots for significant CNVs.
@@ -581,7 +576,6 @@ def plot_cnv_regions(data_frame, gene_lims, sample_name, z_threshold, cn_thresho
     # Generate zoomed-in CNV plots
     for chrom, start_pos, end_pos in cnv_plot_regions:
         plot_region(data_frame, gene_lims, sample_name, z_threshold, cn_threshold, chrom, start_pos, end_pos, bed_file, output_dir)
-
 
 def cyp2d6_report(data_frame, gene_lims, sample_name, z_threshold, cn_threshold, prop_threshold, bed_file, flag_bed_file, output_dir):
     """
@@ -702,7 +696,6 @@ def cyp2d6_report(data_frame, gene_lims, sample_name, z_threshold, cn_threshold,
 
     return cnv_regions
 
-
 def plot_all_genes(data_frame, gene_lims, sample_name, z_threshold, cn_threshold, bed_file, output_dir):
     """
     Generates plots for all genes in the dataset.
@@ -796,8 +789,11 @@ def main():
     df_cnv = read_cnv_file(args.input_cnv)
 
     # Read BED file
-    logging.info(f"\nFinding gene starts and ends from input BED file: {args.input_bed}")    
+    logging.info(f"\nFinding gene starts and ends from input BED file: {args.input_bed}")
+    ##file_name = args.input_bed
+    ##df_bed = gene_starts_and_ends(file_name)
     
+
     # Extract gene limits
     df_gene_limits = gene_starts_and_ends(args.input_bed)
 
