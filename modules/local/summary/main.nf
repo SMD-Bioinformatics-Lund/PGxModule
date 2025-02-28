@@ -255,3 +255,32 @@ process APPEND_ID_TO_GDF {
         END_VERSIONS
         """
 }
+
+
+process EXTRACT_CYP2D6_HAPLOTYPES {
+    label 'process_low'
+    tag "$meta.group"
+
+    input:
+        tuple val(group), val(meta), file(match_json)
+
+    output:
+        tuple val(group), val(meta), file("*.cyp2d6.genotypes.txt"),    emit: cy2d6_genotypes
+
+    when:
+        task.ext.when == null || task.ext.when
+
+    script:
+        def args    = task.ext.args   ?: ''
+        def prefix  = task.ext.prefix ?: "${meta.group}"
+        """
+        grep -wC3 "CYP2D6"  $match_json | tail -n1 | cut -f2 -d ":" | tr -d " " | tr -d "," > ${prefix}.cyp2d6.genotypes.txt
+        """
+
+    stub:
+        def prefix  = task.ext.prefix ?: "${meta.group}"
+        """
+        touch ${prefix}.cyp2d6.genotypes.txt
+        """
+
+}

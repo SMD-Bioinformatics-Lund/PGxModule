@@ -18,7 +18,7 @@ process BCFTOOLS_CALL {
         def args3   = task.ext.args3 ?: ''
         def prefix  = task.ext.prefix ?: "${meta.group}.bcftools.raw"
         """
-        bcftools mpileup --threads ${task.cpus} $args ${bam} | bcftools call --threads ${task.cpus} ${args2} -o ${prefix}.vcf.gz
+        bcftools mpileup --threads ${task.cpus} $args ${bam} | bcftools call --threads ${task.cpus} ${args2} | bcftools filter ${args3} -o ${prefix}.vcf.gz
         tabix -p vcf ${prefix}.vcf.gz
 
         cat <<-END_VERSIONS > versions.yml

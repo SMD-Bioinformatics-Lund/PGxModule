@@ -65,8 +65,8 @@ workflow PGX_PANEL {
         ch_versions = ch_versions.mix(COVERAGE.out.versions)
 
         // Pharmcat
-        // PHARMCAT ( VARIANT_CALLING.out.aggregate_vcf_tbi, COVERAGE.out.pc_panel_depth )
-        // ch_versions = ch_versions.mix(PHARMCAT.out.versions)
+        PHARMCAT ( VARIANT_CALLING.out.aggregate_vcf_tbi, COVERAGE.out.pc_panel_depth )
+        ch_versions = ch_versions.mix(PHARMCAT.out.versions)
 
         // CNV calling
 

@@ -7,7 +7,7 @@ import logging
 # Supported variant callers
 SUPPORTED_CALLERS = {
     'freebayes', 'mutect2', 'tnscope', 'vardict', 'pindel',
-    'samtools', 'gatk-haplotyper', 'sentieon-haplotyper'
+    'bcftools', 'gatk-haplotyper', 'sentieon-haplotyper'
 }
 
 # ---------------------------
@@ -55,6 +55,9 @@ def which_variantcaller(metadata):
         elif line.startswith("##SentieonCommandLine.Haplotyper"):
             source = "sentieon-haplotyper"
             break
+        elif line.startswith("##bcftoolsCommand=mpileup"):
+            source = "bcftools"
+            break
         elif line.startswith("##source="):
             source = line.split("##source=")[1].split(" ")[0].split("_")[0].lower()
             break
@@ -98,41 +101,50 @@ def add_gt(var, sample, key, val):
 # ---------------------------
 # Fix Genotype (FORMAT) Fields
 # ---------------------------
-def fix_gt(var, caller):
+def fix_gt(var, info_dict, caller):
     var['FORMAT'] = []  # Reset FORMAT field
 
     for format_val in var['FORMAT_VAL']:
+        gt = format_val.get("GT", "./.")
+        dp = format_val.get("DP", ".")
+        vd = format_val.get("AD", ".,.").split(",")[1]
+        vaf = format_val.get("AF", ".")
+
         if caller in {"mutect2", "tnscope", "vardict", "pindel"}:
             ref_dp, alt_dp = 0, 0
             if 'AD' in format_val and format_val['AD']:
                 parts = format_val['AD'].split(",")
                 ref_dp = int(parts[0]) if parts[0] else 0
                 alt_dp = int(parts[1]) if len(parts) > 1 and parts[1] else 0
-            af = alt_dp / (alt_dp + ref_dp) if (alt_dp + ref_dp) > 0 else 0
-            add_gt(var, format_val['_sample_id'], "GT", format_val.get("GT", "./."))
-            add_gt(var, format_val['_sample_id'], "VAF", f"{af:.4f}")
-            add_gt(var, format_val['_sample_id'], "VD", str(alt_dp))
-            add_gt(var, format_val['_sample_id'], "DP", str(ref_dp + alt_dp))
+            vaf = round(float(alt_dp / (alt_dp + ref_dp) if (alt_dp + ref_dp) > 0 else 0),4)
+            dp = ref_dp + alt_dp
+            vd = alt_dp
         elif caller in {"freebayes", "gatk-haplotyper", "sentieon-haplotyper"}:
-            vd = format_val.get("AD", ".,.").split(",")[1]
-            dp = format_val.get("DP", ".")
-            af = "."
-            gt = format_val.get("GT", "./.")
-            
             try:
-                vf = round(float(int(vd) / int(dp)),4)
+                vaf = round(float(int(vd) / int(dp)),4)
             except:
-                vf = "."
-            
-            add_gt(var, format_val['_sample_id'], "GT", gt)
-            add_gt(var, format_val['_sample_id'], "VAF", str(vf))
-            add_gt(var, format_val['_sample_id'], "VD", str(vd))
-            add_gt(var, format_val['_sample_id'], "DP", str(dp))
-        else:
-            add_gt(var, format_val['_sample_id'], "DP", format_val.get("DP", "."))
-            add_gt(var, format_val['_sample_id'], "VD", format_val.get("AD", ".,.").split(",")[1])
-            add_gt(var, format_val['_sample_id'], "VAF", format_val.get("AF", "."))
-            add_gt(var, format_val['_sample_id'], "GT", format_val.get("GT", "."))
+                vaf = "."
+        elif caller == "bcftools":
+            dp4 = info_dict.get("DP4", "0,0,0,0").split(",")
+            ref_dp = int(dp4[0]) + int(dp4[1])
+            alt_dp = int(dp4[2]) + int(dp4[3])
+            dp = info_dict.get("DP", "0")
+            fAD = format_val.get("AD", "0,0,0,0").split(",")
+
+            if alt_dp in fAD:
+                vd = alt_dp
+            else:
+                vd = 0
+
+            try:
+                vaf = round(float(vd / (dp)),4)
+            except:
+                vaf = "."
+
+        add_gt(var, format_val['_sample_id'], "DP", dp)
+        add_gt(var, format_val['_sample_id'], "VD", str(vd))
+        add_gt(var, format_val['_sample_id'], "VAF", str(vaf))
+        add_gt(var, format_val['_sample_id'], "GT", str(gt))
 
 # ---------------------------
 # Aggregate VCF Files
@@ -180,7 +192,7 @@ def aggregate_vcfs(vcf_files):
                 add_info(var_dict, "variant_callers", caller)
                 add_info(var_dict, "DP", dp_value)
                 add_info(var_dict, "VC", 1)
-                fix_gt(var_dict, caller)
+                fix_gt(var_dict, info_dict, caller)
                 aggregated[key] = var_dict
 
     for key in aggregated:

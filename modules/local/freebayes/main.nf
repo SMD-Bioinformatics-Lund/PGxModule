@@ -16,9 +16,7 @@ process FREEBAYES {
         def args        = task.ext.args                ?: ''
         def prefix      = task.ext.prefix ?: "${meta.group}.freebayes.raw"
         """
-        freebayes \\
-        $args \\
-        $bam > ${prefix}.vcf1
+        freebayes $args $bam > ${prefix}.vcf1
 
         filter_freebayes_unpaired.pl ${prefix}.vcf1 > ${prefix}.vcf
 
