@@ -21,6 +21,6 @@ workflow CYP2D6_CNVCALL {
         ch_versions = ch_versions.mix( REPORT_CNV_CYP2D6.out.versions)
 
     emit:
-        pharmcat_preprocessed   = REPORT_CNV_CYP2D6.out.cnvreport_cypd26      // channel: [ tuple val(group), val(meta), file("*.report_filtered.txt"), file ("*.CYP2D6_vs_CYP2D7_table.txt"), file("*.png") ]
-        versions                = ch_versions                                                // channel: [ path(versions.yml) ]
+        reports   = REPORT_CNV_CYP2D6.out.cnvreport_cypd26      // channel: [ tuple val(group), val(meta), file("*.report_filtered.txt"), file ("*.CYP2D6_vs_CYP2D7_table.txt"), file("*.png") ]
+        versions                = ch_versions                  // channel: [ path(versions.yml) ]
 }
