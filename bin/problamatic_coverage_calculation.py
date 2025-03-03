@@ -256,6 +256,108 @@ def plot_gene_overlap(depths_df, sample_name, gene_name, depth_threshold, gene_b
     plt.savefig(outplot, bbox_inches='tight')
     plt.close()
 
+
+def read_depth_file(depth_file: str) -> pd.DataFrame:
+    """Read depth file and return as a DataFrame.
+    
+    If the first column does not begin with 'chr' (e.g. it's numeric),
+    the "Chr" column is converted to int along with "Position" and "Depth".
+    Otherwise, "Chr" remains as a string.
+    """
+    df = pd.read_csv(
+        depth_file,
+        sep="\t",
+        header=None,
+        names=["chr", "position", "depth"],
+        dtype={"chr": str},
+    )
+    return df
+
+
+def is_chr_format(df: pd.DataFrame) -> bool:
+    """Check if the 'Chr' column in the DataFrame contains 'chr' prefixes.
+    
+    Returns:
+        True if at least one entry in 'Chr' starts with 'chr'.
+        False if all entries are purely numeric.
+    """
+    if df.empty:
+        raise ValueError("DataFrame is empty.")
+
+    # Convert first value to string and check if any starts with 'chr'
+    return str(df["chr"].iloc[0]).lower().startswith("chr")
+
+
+def read_bed_file(bed_file: str, is_chr: bool) -> pd.DataFrame:
+    """Read BED file and return as a DataFrame.
+    
+    If `is_chr` is True and "Chr" values do not start with "chr", it adds "chr".
+    If `is_chr` is False and "Chr" values start with "chr", it removes "chr".
+    
+    Args:
+        bed_file (str): Path to the BED file.
+        is_chr (bool): Indicates whether the chromosome column should have "chr" prefixes.
+    
+    Returns:
+        pd.DataFrame: BED file as a DataFrame with adjusted "Chr" column.
+    """
+    df = pd.read_csv(
+        bed_file,
+        sep="\t",
+        header=None,
+        names=["chr", "start", "end", "gene"],
+        dtype={"chr": str, "start": int, "end": int, "gene": str},
+    )
+
+    # Check if the first entry in "Chr" starts with "chr"
+    first_val = str(df["chr"].iloc[0]).lower()
+    has_chr_prefix = first_val.startswith("chr")
+
+    if is_chr and not has_chr_prefix:
+        # If `is_chr` is True but the file lacks "chr", add it.
+        df["chr"] = "chr" + df["chr"].astype(str)
+    elif not is_chr and has_chr_prefix:
+        # If `is_chr` is False but the file has "chr", remove it.
+        df["chr"] = df["chr"].str.replace("^chr", "", regex=True)
+
+    return df
+
+def read_overlap_bed(bed_file: str, is_chr: bool) -> pd.DataFrame:
+    """Read BED file and return as a DataFrame.
+    
+    If `is_chr` is True and "Chr" values do not start with "chr", it adds "chr".
+    If `is_chr` is False and "Chr" values start with "chr", it removes "chr".
+    
+    Args:
+        bed_file (str): Path to the BED file.
+        is_chr (bool): Indicates whether the chromosome column should have "chr" prefixes.
+    
+    Returns:
+        pd.DataFrame: BED file as a DataFrame with adjusted "Chr" column.
+    """
+    df = pd.read_csv(
+        bed_file,
+        sep="\t",
+        header=None,
+        names=["chr", "start", "end", "name"],
+        dtype={"chr": str, "start": int, "end": int, "name": str},
+    )
+
+    # Check if the first entry in "Chr" starts with "chr"
+    first_val = str(df["chr"].iloc[0]).lower()
+    has_chr_prefix = first_val.startswith("chr")
+
+    if is_chr and not has_chr_prefix:
+        # If `is_chr` is True but the file lacks "chr", add it.
+        df["chr"] = "chr" + df["chr"].astype(str)
+    elif not is_chr and has_chr_prefix:
+        # If `is_chr` is False but the file has "chr", remove it.
+        df["chr"] = df["chr"].str.replace("^chr", "", regex=True)
+
+    return df
+
+
+
 #---------------------------
 def main():
     parser = argparse.ArgumentParser(description="Generate overlap report and plots (Python version) for problematic regions in a panel.")
@@ -301,9 +403,10 @@ def main():
     log_file.write(f"python {sys.argv[0]} {args.sample_name} {args.depths_file} {args.panel_name} {args.target_bed} {args.depth_threshold} {args.overlap_bed} {args.outfolder}\n")
 
     # Read input files.
-    depths_df = pd.read_csv(args.depths_file, sep="\t", names=["chr", "position", "depth"])
-    bed_df = pd.read_csv(args.target_bed, sep="\t", names=["chr", "start", "end", "gene"])
-    shade_df = pd.read_csv(args.overlap_bed, sep="\t", names=["chr", "start", "end", "name"])
+    depths_df = read_depth_file(args.depths_file)
+    is_chr = is_chr_format(depths_df)
+    bed_df = read_bed_file(args.target_bed, is_chr)
+    shade_df = read_overlap_bed(args.overlap_bed, is_chr)
 
     overlap_report(depths_df, args.sample_name, args.panel_name, bed_df, args.depth_threshold, shade_df, args.outfolder, report_file, report_html, log_file)
 

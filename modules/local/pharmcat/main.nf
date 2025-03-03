@@ -53,9 +53,8 @@ process PHARMCAT_RUN {
     output:
         tuple val(group), val(meta), file("*.phenotype.json"),  emit: pharmcat_pheno_json
         tuple val(group), val(meta), file("*.match.json"),      emit: pharmcat_match_json
-        tuple val(group), val(meta), file("*.match.html"),      emit: pharmcat_match_html
-        tuple val(group), val(meta), file("*.report.html"),     emit: pharmcat_report
-        tuple val(group), val(meta), file("*.report.json"),     emit: pharmcat_report_json
+        tuple val(group), val(meta), file("*.report.html"),     emit: pharmcat_report,              optional: true
+        tuple val(group), val(meta), file("*.report.json"),     emit: pharmcat_report_json,         optional: true  
         path "versions.yml",                                    emit: versions
 
     when:
@@ -78,7 +77,6 @@ process PHARMCAT_RUN {
         """
         touch ${prefix}.pharmcat.phenotype.json
         touch ${prefix}.match.json
-        touch ${prefix}.match.html
         touch ${prefix}.report.html
         touch ${prefix}.report.json
 
@@ -89,6 +87,7 @@ process PHARMCAT_RUN {
         """
 
 }
+
 
 // process PHARMCAT_VCF_BED {
 //     label 'process_medium'

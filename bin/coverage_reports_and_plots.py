@@ -7,48 +7,163 @@ from datetime import datetime
 import os
 
 
-def read_bed_file(bed_file: str) -> pd.DataFrame:
-    """Read BED file and return as a DataFrame."""
-    return pd.read_csv(
+def read_bed_file(bed_file: str, is_chr: bool) -> pd.DataFrame:
+    """Read BED file and return as a DataFrame.
+    
+    If `is_chr` is True and "Chr" values do not start with "chr", it adds "chr".
+    If `is_chr` is False and "Chr" values start with "chr", it removes "chr".
+    
+    Args:
+        bed_file (str): Path to the BED file.
+        is_chr (bool): Indicates whether the chromosome column should have "chr" prefixes.
+    
+    Returns:
+        pd.DataFrame: BED file as a DataFrame with adjusted "Chr" column.
+    """
+    df = pd.read_csv(
         bed_file,
         sep="\t",
         header=None,
         names=["Chr", "Start", "End", "Annot"],
-        dtype={"Chr": str},
+        dtype={"Chr": str, "Start": int, "End": int},
     )
+
+    # Check if the first entry in "Chr" starts with "chr"
+    first_val = str(df["Chr"].iloc[0]).lower()
+    has_chr_prefix = first_val.startswith("chr")
+
+    if is_chr and not has_chr_prefix:
+        # If `is_chr` is True but the file lacks "chr", add it.
+        df["Chr"] = "chr" + df["Chr"].astype(str)
+    elif not is_chr and has_chr_prefix:
+        # If `is_chr` is False but the file has "chr", remove it.
+        df["Chr"] = df["Chr"].str.replace("^chr", "", regex=True)
+
+    return df
+
 
 
 def read_depth_file(depth_file: str) -> pd.DataFrame:
-    """Read depth file and return as a DataFrame."""
-    return pd.read_csv(
+    """Read depth file and return as a DataFrame.
+    
+    If the first column does not begin with 'chr' (e.g. it's numeric),
+    the "Chr" column is converted to int along with "Position" and "Depth".
+    Otherwise, "Chr" remains as a string.
+    """
+    df = pd.read_csv(
         depth_file,
         sep="\t",
         header=None,
         names=["Chr", "Position", "Depth"],
         dtype={"Chr": str},
     )
+    return df
 
 
-def read_snp_bed_file(snp_bed_file: str) -> pd.DataFrame:
-    """Read SNP BED file and return as a DataFrame."""
-    return pd.read_csv(
+def is_chr_format(df: pd.DataFrame) -> bool:
+    """Check if the 'Chr' column in the DataFrame contains 'chr' prefixes.
+    
+    Returns:
+        True if at least one entry in 'Chr' starts with 'chr'.
+        False if all entries are purely numeric.
+    """
+    if df.empty:
+        raise ValueError("DataFrame is empty.")
+
+    # Convert first value to string and check if any starts with 'chr'
+    return str(df["Chr"].iloc[0]).lower().startswith("chr")
+
+
+
+import pandas as pd
+
+def read_snp_bed_file(snp_bed_file: str, is_chr: bool) -> pd.DataFrame:
+    """Read SNP BED file and return as a DataFrame.
+    
+    Ensures that:
+    - If `is_chr` is True and "Chr" values do not start with "chr", it adds "chr".
+    - If `is_chr` is False and "Chr" values start with "chr", it removes "chr".
+    - If no "chr" is present and values are purely numeric, the column is converted to integers.
+
+    Args:
+        snp_bed_file (str): Path to the SNP BED file.
+        is_chr (bool): Determines whether chromosome labels should have "chr" prefix.
+
+    Returns:
+        pd.DataFrame: SNP BED file as a DataFrame with adjusted "Chr" column.
+    """
+    df = pd.read_csv(
         snp_bed_file,
         sep="\t",
         header=None,
         names=["Chr", "Start", "End", "SNP_ID"],
-        dtype={"Chr": str},
+        dtype={"Start": int, "End": int},
     )
 
+    # Check if the first entry in "Chr" starts with "chr"
+    first_val = str(df["Chr"].iloc[0]).lower()
+    has_chr_prefix = first_val.startswith("chr")
 
-def read_pc_bed_file(pc_bed_file: str) -> pd.DataFrame:
-    """Read PC BED file and return as a DataFrame."""
-    return pd.read_csv(
+    if is_chr:
+        if not has_chr_prefix:
+            # If `is_chr` is True but the file lacks "chr", add it
+            df["Chr"] = "chr" + df["Chr"].astype(str)
+    else:
+        if has_chr_prefix:
+            # If `is_chr` is False but the file has "chr", remove it
+            df["Chr"] = df["Chr"].str.replace("^chr", "", regex=True)
+        
+        # Convert "Chr" to int if all values are numeric
+        if df["Chr"].str.isnumeric().all():
+            df["Chr"] = df["Chr"].astype(int)
+
+    return df
+
+
+
+import pandas as pd
+
+def read_pc_bed_file(pc_bed_file: str, is_chr: bool) -> pd.DataFrame:
+    """Read PC BED file and return as a DataFrame.
+    
+    Ensures that:
+    - If `is_chr` is True and "Chr" values do not start with "chr", it adds "chr".
+    - If `is_chr` is False and "Chr" values start with "chr", it removes "chr".
+    - If no "chr" is present and values are purely numeric, the column is converted to integers.
+
+    Args:
+        pc_bed_file (str): Path to the PC BED file.
+        is_chr (bool): Determines whether chromosome labels should have "chr" prefix.
+
+    Returns:
+        pd.DataFrame: PC BED file as a DataFrame with adjusted "Chr" column.
+    """
+    df = pd.read_csv(
         pc_bed_file,
         sep="\t",
         header=None,
         names=["Chr", "Start", "ID", "Ref", "Alt"],
-        dtype={"Chr": str},
+        dtype={"Start": int},
     )
+
+    # Check if the first entry in "Chr" starts with "chr"
+    first_val = str(df["Chr"].iloc[0]).lower()
+    has_chr_prefix = first_val.startswith("chr")
+
+    if is_chr:
+        if not has_chr_prefix:
+            # If `is_chr` is True but the file lacks "chr", add it
+            df["Chr"] = "chr" + df["Chr"].astype(str)
+    else:
+        if has_chr_prefix:
+            # If `is_chr` is False but the file has "chr", remove it
+            df["Chr"] = df["Chr"].str.replace("^chr", "", regex=True)
+        
+        # Convert "Chr" to int if all values are numeric
+        if df["Chr"].str.isnumeric().all():
+            df["Chr"] = df["Chr"].astype(int)
+
+    return df
 
 
 def annotate_depths(depth_df: pd.DataFrame, bed_df: pd.DataFrame) -> pd.DataFrame:
@@ -164,9 +279,10 @@ def main():
 
     # Read input files
     depth_df = read_depth_file(args.depth_file)
-    bed_df = read_bed_file(args.bed_file)
-    snp_bed_df = read_snp_bed_file(args.snp_bed_file)
-    pc_bed_df = read_pc_bed_file(args.pc_bed_file)
+    chr_format = is_chr_format(depth_df)
+    bed_df = read_bed_file(args.bed_file, chr_format)
+    snp_bed_df = read_snp_bed_file(args.snp_bed_file, chr_format)
+    pc_bed_df = read_pc_bed_file(args.pc_bed_file, chr_format)
 
     # Annotate depths
     annotated_df = annotate_depths(depth_df, bed_df)

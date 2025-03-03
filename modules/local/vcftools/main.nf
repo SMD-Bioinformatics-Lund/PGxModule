@@ -5,21 +5,22 @@ process VCFTOOLS_FILTER {
         tuple val(group), val(meta), file(vcf)
 
     output:
-        tuple val(group), val(meta), file("*.filtered.vcf"),    emit: filtered_vcf
-        path "versions.yml",                                    emit: versions
+        tuple val(group), val(meta), file("*.filtered.recode.vcf"), emit: filtered_vcf
+        tuple val(group), val(meta), file("*.filtered.tagged.vcf"), emit: tagged_vcf
+        path "versions.yml",                                        emit: versions
 
     when:
         task.ext.when == null || task.ext.when
 
     script:
         def args    = task.ext.args ?: ''
-        def prefix  = task.ext.prefix ?: "${meta.group}"
+        def args2   = task.ext.args2 ?: ''
+        def args3   = task.ext.args3 ?: ''
+        def prefix  = task.ext.prefix ?: "${meta.group}.filtered"
         """ 
-        vcffilter $args ${vcf} \\
-        | vcffilter $args2 \\
-        | vcfglxgt > ${prefix}.filtered.tagged.vcf
+        vcffilter $args ${vcf} | vcffilter $args2 | vcfglxgt > ${prefix}.tagged.vcf
 
-        vcftools --vcf ${prefix}.filtered.tagged.vcf --out ${prefix}.filtered.vcf $args3
+        vcftools --vcf ${prefix}.tagged.vcf --out ${prefix} $args3
 
         cat <<-END_VERSIONS > versions.yml
         "${task.process}":
@@ -30,7 +31,8 @@ process VCFTOOLS_FILTER {
     stub:
         def prefix = task.ext.prefix ?: "${meta.group}"
         """
-        touch ${prefix}.filtered.vcf
+        touch ${prefix}.tagged.vcf
+        touch ${prefix}.recode.vcf
 
         cat <<-END_VERSIONS > versions.yml
         "${task.process}":
