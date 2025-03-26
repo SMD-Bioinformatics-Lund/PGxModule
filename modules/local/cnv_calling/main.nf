@@ -28,6 +28,9 @@ process CALCULATE_CNV_CYP2D6  {
     stub:
         def prefix  = task.ext.prefix ?: "${meta.group}"
         """
+        python --version
+        python3 --version
+        which python3
         touch ${prefix}.CNV.txt
 
         cat <<-END_VERSIONS > versions.yml
@@ -59,7 +62,7 @@ process REPORT_CNV_CYP2D6 {
         def prefix  = task.ext.prefix ?: "${meta.group}"
         """
         pharmcat -vcf  $vcf --base-filename ${prefix}.pharmcat $args
-        python generate_CYP2D6_CNV_report_v2.py -s ${prefix} -c ${cnvfile} $args  -o ./{prefix}
+        generate_CYP2D6_CNV_report_v2.py -s ${prefix} -c ${cnvfile} $args  -o ./{prefix}
         mv  ./{prefix}/{prefix}_CYP2D6_report/* .
 
         cat <<-END_VERSIONS > versions.yml
@@ -69,8 +72,11 @@ process REPORT_CNV_CYP2D6 {
         """
 
     stub:
+
         def prefix  = task.ext.prefix ?: "${meta.group}"
         """
+        python --version
+        which python
         touch ${prefix}.report_filtered.txt
         touch ${prefix}.CYP2D6_vs_CYP2D7_table.txt
         touch ${prefix}..png

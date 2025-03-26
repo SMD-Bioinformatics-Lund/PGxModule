@@ -37,3 +37,5 @@ bin/report_template.txt
 bin/snakemake_report.py
 bin/pdf.py
 subworkflows/local/pharmacoGenomics.nf.backup
+deploy_hopper_dev.sh
+transfer.log

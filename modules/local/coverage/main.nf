@@ -29,6 +29,9 @@ process COVERAGE_REPORTS {
     stub:
         def prefix = task.ext.prefix ?: "${meta.group}"
         """
+        which python
+        python3 --version
+        python --version
         touch ${prefix}.coverage_stats.txt
         touch ${prefix}.depth_annotated.csv
         touch ${prefix}.coverage_report.html
