@@ -51,7 +51,8 @@ process REPORT_CNV_CYP2D6 {
         tuple val(group), val(meta), file(cnvfile)
 
     output:
-        tuple val(group), val(meta), file("*.report_filtered.txt"), file ("*.CYP2D6_vs_CYP2D7_table.txt"), file("*.png"), emit: cnvreport_cypd26
+        tuple val(group), val(meta), file("*report_filtered.txt"), file ("*CYP2D6_vs_CYP2D7_table.txt"), file("*.png"), emit: cnvreport_cypd26
+
         path "versions.yml",                                    emit: versions
 
     when:
@@ -61,9 +62,9 @@ process REPORT_CNV_CYP2D6 {
         def args    = task.ext.args   ?: ''
         def prefix  = task.ext.prefix ?: "${meta.group}"
         """
-        pharmcat -vcf  $vcf --base-filename ${prefix}.pharmcat $args
-        generate_CYP2D6_CNV_report_v2.py -s ${prefix} -c ${cnvfile} $args  -o ./{prefix}
-        mv  ./{prefix}/{prefix}_CYP2D6_report/* .
+
+        generate_CYP2D6_CNV_report_v2.py -s ${prefix} -c ${cnvfile} $args  -o ./${prefix}
+        cp  ./${prefix}/${prefix}_CYP2D6_report/* .
 
         cat <<-END_VERSIONS > versions.yml
         "${task.process}":

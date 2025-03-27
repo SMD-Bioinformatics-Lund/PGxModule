@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-
 import argparse
 import os
 import pandas as pd
@@ -448,7 +447,7 @@ def plot_region(data_frame, gene_lims, sample_name, z_threshold, cn_threshold, c
     # Load BED file containing annotation regions
     bed_df = pd.read_csv(bed_file, sep='\t', names=["chr", "start_pos", "end_pos", "annot"])
 
-    print(data_frame.head())
+    ## print(data_frame.head())
 
     # Filter CNV data for the given region
     this_reg_df = data_frame[
@@ -616,23 +615,32 @@ def cyp2d6_report(data_frame, gene_lims, sample_name, z_threshold, cn_threshold,
 
         # Process CNVs within the CYP2D6 region
         for idx, row in data_frame.loc[cyp2d6_series].iterrows():
-            chr_, pos = row["Chr"], row["Position"]
+            chr_, pos = str("chr")+str(row["Chr"]), row["Position"]
+            ## print (chr_,pos)
 
             # Find corresponding gene region
             gene_region = bed_df[(bed_df["chr"] == chr_) & (bed_df["start_pos"] < pos) & (bed_df["end_pos"] >= pos)]
+
+
             if gene_region.empty:
                 continue
 
             start, end, gene_name = gene_region.iloc[0][["start_pos", "end_pos", "gene"]]
 
             # Extract relevant CNV data
-            region_mask = (data_frame["Chr"] == chr_) & (data_frame["Position"] > start) & (data_frame["Position"] <= end)
+            # chrom.replace("chr","")  
+            chr_copy = str(chr_.replace("chr",""))
+            region_mask = (data_frame["Chr"] == chr_copy) & (data_frame["Position"] > start) & (data_frame["Position"] <= end)
+
             region_df = data_frame.loc[region_mask]
+            #print(region_df)
+
 
             mean_cn = region_df["copynumber"].mean()
             mean_z = region_df["zscore"].mean()
             mean_depth = region_df["Depth"].mean()
             mean_exp_depth = region_df["expDepth"].mean()
+   
 
             cnv_type = "DUP" if mean_cn > 2 else "DEL" if mean_cn < 2 else "UNDETERMINED"
             region_length = len(region_df)
@@ -659,7 +667,7 @@ def cyp2d6_report(data_frame, gene_lims, sample_name, z_threshold, cn_threshold,
                 )
 
             # Write to report file
-            f.write(f"{chr_}\t{start}\t{end}\t{gene_name}\t{cnv_type}\t{mean_depth:.2f}\t{mean_exp_depth:.2f}\t{mean_cn:.2f}\t"
+            f.write(f"{chr_}\t{pos}\t{end}\t{gene_name}\t{cnv_type}\t{mean_depth:.2f}\t{mean_exp_depth:.2f}\t{mean_cn:.2f}\t"
                     f"{mean_z:.2f}\t{region_length}\t{pos_above}\t{percent_above:.2f}\t{flag}\t{comment}\n")
 
     print(f"CYP2D6 CNV report saved: {report_file}")
@@ -753,15 +761,15 @@ def main():
     The script prints out the end time to the log file.
     """
     parser = argparse.ArgumentParser(description="Generate CYP2D6 CNV report from input files")
-    parser.add_argument("input_sample_name", type=str, help="Prefix for output report and plots")
-    parser.add_argument("input_cnv", type=str, help="Path to the input CNV file")
-    parser.add_argument("input_bed", type=str, help="Path to the input BED file")
-    parser.add_argument("input_flag_bed", type=str, help="Path to the input flag BED file")
-    parser.add_argument("input_z_threshold", type=float, help="Threshold for the z-score")
-    parser.add_argument("input_cn_threshold", type=float, help="Threshold for the copy number deviation from 2")
-    parser.add_argument("input_prop_threshold", type=float, help="Proportion threshold")
-    parser.add_argument("chr_lengths", type=str, help="Path to chromosome lengths file")
-    parser.add_argument("output_folder", type=str, help="Folder to store the report output")
+    parser.add_argument("-s","--input_sample_name", type=str, help="Prefix for output report and plots")
+    parser.add_argument("-c","--input_cnv", type=str, help="Path to the input CNV file")
+    parser.add_argument("-b","--input_bed", type=str, help="Path to the input BED file")
+    parser.add_argument("-f","--input_flag_bed", type=str, help="Path to the input flag BED file")
+    parser.add_argument("-z","--input_z_threshold", type=float, help="Threshold for the z-score")
+    parser.add_argument("-cn","--input_cn_threshold", type=float, help="Threshold for the copy number deviation from 2")
+    parser.add_argument("-p","--input_prop_threshold", type=float, help="Proportion threshold")
+    parser.add_argument("-l","--chr_lengths", type=str, help="Path to chromosome lengths file")
+    parser.add_argument("-o","--output_folder", type=str, help="Folder to store the report output")
     
     args = parser.parse_args()
 
