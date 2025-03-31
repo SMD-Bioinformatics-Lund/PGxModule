@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 import argparse
 import os
 import pandas as pd
@@ -6,6 +5,10 @@ import numpy as np
 import logging
 from datetime import datetime
 import matplotlib.pyplot as plt
+import matplotlib.patches as mpatches
+import matplotlib.colors as mcolors
+import matplotlib.cm as cm
+import re
 
 # Read input CNV file
 def read_cnv_file(cnv_file):
@@ -17,8 +20,12 @@ def read_cnv_file(cnv_file):
 
     Returns:
     pd.DataFrame: DataFrame containing the CNV data.
+    
     """
-    return pd.read_csv(cnv_file)
+
+    df = pd.read_csv(cnv_file, dtype={0: str})
+
+    return df
 
 def gene_starts_and_ends(bed_file):
     """
@@ -53,11 +60,15 @@ def gene_starts_and_ends(bed_file):
 
         # If a new gene is encountered, store previous gene details
         if this_line_gene_name != this_gene:
-            gene_limits.append([row["chr"], this_start, df_bed.loc[index - 1, "end"], this_gene])
+            gene_limits.append([df_bed.loc[index - 1, "chr"], this_start, df_bed.loc[index - 1, "end"], this_gene])
+            #print(df_bed.loc[index - 1, "chr"],[row["chr"], this_start, df_bed.loc[index - 1, "end"],this_gene])
 
             # Reset values for the new gene
             this_gene = this_line_gene_name
             this_start = row["start"] + 1
+            #print ("exception2")
+            #print (this_gene)
+            #print (this_start)
 
         # If it's the last row, store the final gene details
         if index == len(df_bed) - 1:
@@ -602,45 +613,62 @@ def cyp2d6_report(data_frame, gene_lims, sample_name, z_threshold, cn_threshold,
     print(bed_df.head())
     print(flag_bed_df.head())
     print (data_frame.head())
+    print (data_frame.tail())
+    print (data_frame.shape)
 
     # Define the CYP2D6-D8 region boundaries
-    cyp2d6_series = (data_frame["Chr"] == 22) & (data_frame["Position"] > 42123142) & (data_frame["Position"] < 42155251)
+    cyp2d6_series =  ((data_frame["Chr"] == "22") & (data_frame["Position"] > 42123142) & (data_frame["Position"] < 42155251))
+    #cyp2d6_series = (data_frame["Chr"] == int(22) & (data_frame["Position"] > int(42123142)) & (data_frame["Position"] < int(42155251)))
 
     # Identify CNV threshold exceedances
     threshold_series = (data_frame["zscore"].abs() > z_threshold) & ((data_frame["copynumber"] - 2).abs() > cn_threshold)
 
     report_file = os.path.join(output_dir, f"{sample_name}_CYP2D6_report_all.txt")
+    results = []
+    
     with open(report_file, "w") as f:
         f.write("chr\tstart_pos\tend_pos\tgene\tcnv\tmean_depth\texp_mean_depth\tmean_cn\tmean_z-score\treg.length\tpos.above\t%above\tflag\tcomment\n")
 
+        result_list = [] 
         # Process CNVs within the CYP2D6 region
         for idx, row in data_frame.loc[cyp2d6_series].iterrows():
-            chr_, pos = str("chr")+str(row["Chr"]), row["Position"]
-            ## print (chr_,pos)
+            chr_, pos = str("chr").replace("chr","")+str(row["Chr"]), row["Position"]
+            
+            #print (chr_, pos)
 
             # Find corresponding gene region
             gene_region = bed_df[(bed_df["chr"] == chr_) & (bed_df["start_pos"] < pos) & (bed_df["end_pos"] >= pos)]
+            #gene_region = bed_df[(bed_df["chr"] == 22)]
+            #print ("GENE_REGION")
+            #print (gene_region)
 
 
             if gene_region.empty:
                 continue
 
             start, end, gene_name = gene_region.iloc[0][["start_pos", "end_pos", "gene"]]
+            #print("what is this")
+            #print (chr_,start, end, gene_name)
 
-            # Extract relevant CNV data
-            # chrom.replace("chr","")  
-            chr_copy = str(chr_.replace("chr",""))
-            region_mask = (data_frame["Chr"] == chr_copy) & (data_frame["Position"] > start) & (data_frame["Position"] <= end)
 
+            region_mask = (data_frame["Chr"] == chr_) & (data_frame["Position"] > start) & (data_frame["Position"] <= end)
+            #region_mask = (data_frame["Chr"] == chr_)
+
+
+            #print ("region_mask")
+            #print(region_mask) 
             region_df = data_frame.loc[region_mask]
+            
+            #print ("REGION MASK")
             #print(region_df)
-
 
             mean_cn = region_df["copynumber"].mean()
             mean_z = region_df["zscore"].mean()
             mean_depth = region_df["Depth"].mean()
             mean_exp_depth = region_df["expDepth"].mean()
-   
+
+            
+            #print(mean_depth,mean_z, mean_cn, mean_exp_depth)
 
             cnv_type = "DUP" if mean_cn > 2 else "DEL" if mean_cn < 2 else "UNDETERMINED"
             region_length = len(region_df)
@@ -660,15 +688,25 @@ def cyp2d6_report(data_frame, gene_lims, sample_name, z_threshold, cn_threshold,
                 (flag_bed_df["chr"] == chr_) &
                 (flag_bed_df["start_pos"] < end) &
                 (flag_bed_df["end_pos"] > start)
-            ]
+                ]
+            
             if not overlap_flags.empty:
                 comment += "WARNING - Overlap with problematic region: " + "; ".join(
                     [f"{r['chr']}:{r['start_pos']}-{r['end_pos']} {r['annot']}" for _, r in overlap_flags.iterrows()]
                 )
 
             # Write to report file
-            f.write(f"{chr_}\t{pos}\t{end}\t{gene_name}\t{cnv_type}\t{mean_depth:.2f}\t{mean_exp_depth:.2f}\t{mean_cn:.2f}\t"
-                    f"{mean_z:.2f}\t{region_length}\t{pos_above}\t{percent_above:.2f}\t{flag}\t{comment}\n")
+            result_list.append([chr_, start, end, gene_name, cnv_type, mean_depth, mean_exp_depth, mean_cn, mean_z, region_length, pos_above, percent_above, flag, comment])
+
+        unique_result_list =  [list(t) for t in set(tuple(sublist) for sublist in result_list)]
+        unique_result_list = sorted(unique_result_list, key=lambda x: x[1])
+        print (len(unique_result_list))
+
+        for i in unique_result_list:
+            f.write("\t".join([str(x) for x in i]) + "\n")
+
+        #f.write(f"{chr_}\t{start}\t{end}\t{gene_name}\t{cnv_type}\t{mean_depth:.2f}\t{mean_exp_depth:.2f}\t{mean_cn:.2f}\t"
+        #        f"{mean_z:.2f}\t{region_length}\t{pos_above}\t{percent_above:.2f}\t{flag}\t{comment}\n")
 
     print(f"CYP2D6 CNV report saved: {report_file}")
 
@@ -683,28 +721,117 @@ def cyp2d6_report(data_frame, gene_lims, sample_name, z_threshold, cn_threshold,
 
     # Create CYP2D6 vs CYP2D7 table
     element_df = cnv_regions.copy()
-    element_df["gene"] = element_df["gene"].apply(lambda x: x.split("_")[0])
+    #element_df["gene"] = element_df["gene"].apply(lambda x: x.split("_")[0])
+    element_df["gene_new"] = element_df["gene"].apply(lambda x: x.split("/")[0])
     element_df["element"] = element_df["gene"].apply(lambda x: x.split("_")[-1])
+
+
+    print (element_df["gene_new"].head() )
+    print (element_df["element"].head() )
+
 
     elements = ["ex1", "ex2", "ex3", "ex4", "ex5", "ex6", "ex7", "ex8", "ex9", "REP"]
     cn_df = pd.DataFrame({"element": elements, "CYP2D6": 0.0, "CYP2D7": 0.0, "total": 0.0, "diff": 0.0, "ratio": 0.0, "CYP2D6_DEL_DUP": ""})
 
-    for i, element in enumerate(elements):
-        d6_values = element_df[(element_df["element"] == element) & (element_df["gene"] == "CYP2D6")]["mean_cn"]
-        d7_values = element_df[(element_df["element"] == element) & (element_df["gene"] == "CYP2D7")]["mean_cn"]
 
-        cn_df.at[i, "CYP2D6"] = d6_values.mean() if not d6_values.empty else 0.0
-        cn_df.at[i, "CYP2D7"] = d7_values.mean() if not d7_values.empty else 0.0
-        cn_df.at[i, "total"] = cn_df.at[i, "CYP2D6"] + cn_df.at[i, "CYP2D7"]
-        cn_df.at[i, "diff"] = abs(cn_df.at[i, "CYP2D6"] - cn_df.at[i, "CYP2D7"])
-        cn_df.at[i, "ratio"] = cn_df.at[i, "CYP2D6"] / cn_df.at[i, "CYP2D7"] if cn_df.at[i, "CYP2D7"] != 0 else np.nan
+    for i, element in enumerate(elements):
+
+        if element != "REP":
+            print (i, element)
+            d6_values = element_df[(element_df["element"] == element) & (element_df["gene_new"] == "CYP2D6")]["mean_cn"]
+            d7_values = element_df[(element_df["element"] == element) & (element_df["gene_new"] == "CYP2D7")]["mean_cn"]
+        else:
+            print (i, element)
+            d6_values = element_df[(element_df["element"] == "REP6") & (element_df["gene_new"] == "CYP2D6ds")]["mean_cn"]
+            d7_values = element_df[(element_df["element"] == "REP7") & (element_df["gene_new"] == "CYP2D6-D7_REP7")]["mean_cn"]
+
+
+        cn_df.at[i, "CYP2D6"]           = round(d6_values.mean(),1) if not d6_values.empty else 0.0
+        cn_df.at[i, "CYP2D7"]           = round(d7_values.mean(),1) if not d7_values.empty else 0.0
+        cn_df.at[i, "total"]            = round(cn_df.at[i, "CYP2D6"] + cn_df.at[i, "CYP2D7"],1)
+        cn_df.at[i, "diff"]             = round(abs(cn_df.at[i, "CYP2D6"] - cn_df.at[i, "CYP2D7"]),1)
+        cn_df.at[i, "ratio"]            = round(cn_df.at[i, "CYP2D6"] / cn_df.at[i, "CYP2D7"],1) if cn_df.at[i, "CYP2D7"] != 0 else np.nan
+        cn_df.at[i, "CYP2D6_DEL_DUP"]   = "DUP" if cn_df.at[i, "ratio"] > 1 else ("DEL" if cn_df.at[i, "ratio"] < 1 else 0.0)
 
     # Save CN table
+    print (cn_df)
+    plot_CYP2D6_vs_CYP2D7 (cn_df, sample_name, output_dir)
+
     cn_table_file = os.path.join(output_dir, f"{sample_name}_CYP2D6_vs_CYP2D7_table.txt")
     cn_df.to_csv(cn_table_file, sep='\t', index=False)
     print(f"CYP2D6 vs CYP2D7 table saved: {cn_table_file}")
 
+  
+
     return cnv_regions
+
+
+def plot_CYP2D6_vs_CYP2D7(cn_df, sample_name, output_dir):
+    # Find max and min copy numbers
+    max_cn = max(
+        np.sort(cn_df["CYP2D6"])[-1],
+        np.sort(cn_df["CYP2D7"])[-1]
+    )
+    min_cn = min(
+        np.sort(cn_df["CYP2D6"])[0],
+        np.sort(cn_df["CYP2D7"])[0]
+    )
+
+    # Set Y-axis limits
+    y_high_lim_cn = max_cn if max_cn > 4 else 4
+    y_low_lim_cn = min_cn if min_cn < 0 else 0
+
+    # Start plotting
+    fig, ax = plt.subplots(figsize=(12, 8))
+
+    # Plot CYP2D6
+    ax.scatter(
+        range(len(cn_df)), 
+        cn_df["CYP2D6"], 
+        label="CYP2D6", 
+        color="black", 
+        s=150, 
+        alpha=1
+    )
+
+    # Plot CYP2D7
+    ax.scatter(
+        range(len(cn_df)), 
+        cn_df["CYP2D7"], 
+        label="CYP2D7", 
+        color="grey", 
+        s=120, 
+        alpha=1
+    )
+
+    # X-ticks and labels
+    ax.set_xticks(range(len(cn_df)))
+    ax.set_xticklabels(cn_df["element"], rotation=90, fontsize=12)
+
+    # Grid and axis settings
+    ax.grid(True, which='major', axis='x', linestyle='--', alpha=0.7)
+    ax.minorticks_on()
+    ax.set_ylabel("Copy Number", fontsize=12)
+    ax.set_ylim(y_low_lim_cn, y_high_lim_cn)
+    ax.tick_params(axis='y', labelsize=12)
+    ax.tick_params(axis='x', labelsize=12, direction='out')
+
+    # Title and legend
+    ax.set_title(f"{sample_name}: CYP2D6 vs CYP2D7 copy numbers", fontsize=14)
+    ax.legend(fontsize=12, frameon=False)
+
+    # Horizontal lines at 1.5 and 2.5
+    ax.axhline(y=1.5, linestyle='dashed', color='grey')
+    ax.axhline(y=2.5, linestyle='dashed', color='grey')
+
+    # Save plot
+    output_path = f"{output_dir}/{sample_name}_CYP2D6_vs_CYP2D7.png"
+    plt.tight_layout()
+    plt.savefig(output_path)
+    plt.close()
+
+    print (f"Saving CYP2D6 vs CYP2D7 plot as {output_path}")
+
 
 def plot_all_genes(data_frame, gene_lims, sample_name, z_threshold, cn_threshold, bed_file, output_dir):
     """
@@ -741,6 +868,195 @@ def setup_logging(log_file):
     formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
     console.setFormatter(formatter)
     logging.getLogger().addHandler(console)
+
+def plot_region_with_layers(data_frame, gene_lims, sample_name, z_threshold,    cn_threshold, chr_name, start_pos, end_pos, bed_file, output_dir):
+
+    # Log start
+    """
+    Creates a plot for a given region in a sample.
+
+    Parameters:
+    data_frame (pd.DataFrame): DataFrame containing the CNV data.
+    gene_lims (pd.DataFrame): DataFrame containing the start and end positions of unique genes.
+    sample_name (str): Name of the sample.
+    z_threshold (float): Z-score threshold above or below which a marker is considered significant.
+    cn_threshold (float): Copy number threshold above or below which a marker is considered significant.
+    chr_name (str): Chromosome name.
+    start_pos (int): Start position of the region.
+    end_pos (int): End position of the region.
+    bed_file (str): Path to the BED file.
+    output_dir (str): Output directory for the plot.
+    log_file (str): Log file to write to.
+
+    Returns:
+    None
+    """
+
+    # Read BED file
+    bed_df = pd.read_csv(bed_file, sep='\t', header=None, names=['chr', 'start_pos', 'end_pos', 'annot'])
+
+    print(bed_df.head())
+    print (bed_df.shape)
+    print (gene_lims.tail())
+    print (gene_lims)
+
+    # Filter region data
+    this_reg_df = data_frame[(data_frame['Chr'] == chr_name) &
+                             (data_frame['Position'] >= start_pos) &
+                             (data_frame['Position'] <= end_pos)].reset_index(drop=True)
+
+    this_reg_gene_lims = gene_lims[(gene_lims.iloc[:, 0] == chr_name) &
+                                   (gene_lims.iloc[:, 1] < end_pos) &
+                                   (gene_lims.iloc[:, 2] > start_pos)].reset_index(drop=True)
+
+    print (this_reg_gene_lims.tail() )
+    print (this_reg_gene_lims.shape)
+
+    # Map gene limits to row indices
+    gene_limits = []
+    for _, row in this_reg_gene_lims.iterrows():
+        start_idx = this_reg_df.index[this_reg_df['Position'] == row.iloc[1]].tolist()
+        end_idx = this_reg_df.index[this_reg_df['Position'] == row.iloc[2]].tolist()
+
+        start_idx = start_idx[0] if start_idx else 0
+        end_idx = end_idx[0] if end_idx else len(this_reg_df) - 1
+
+        gene_limits.append([start_idx, end_idx, row.iloc[3]])
+
+    print (gene_limits)
+    # Identify BED regions (REP/exon) for shading
+    shaded_regions = []
+    for _, row in bed_df.iterrows():
+        if row['chr'] == chr_name:
+            start_idx = this_reg_df.index[this_reg_df['Position'] == row['start_pos']].tolist()
+            end_idx = this_reg_df.index[this_reg_df['Position'] == row['end_pos']].tolist()
+            if start_idx and end_idx:
+                shaded_regions.append((start_idx[0], end_idx[0], row['annot']))
+
+    print (shaded_regions)
+    # Threshold markers
+    threshold_series = ((np.abs(this_reg_df['zscore']) > z_threshold) &
+                        (np.abs(this_reg_df['copynumber'] - 2) > cn_threshold)).astype(int)
+
+    color_map = mcolors.LinearSegmentedColormap.from_list('black_red', ['black', 'red'])
+
+    # Plotting
+    # fig, axs = plt.subplots(3, 1, figsize=(16, 12), sharex=True)
+    fig, axs = plt.subplots(3, 1, figsize=(16, 12))
+
+    x_series = np.arange(len(this_reg_df))
+
+    elements = ["dsREP","ex1", "ex2", "ex3", "ex4", "ex5", "ex6", "ex7", "ex8", "ex9","REP6","REP7"]
+
+    # Add shaded regions (REP/exons)
+    for start_idx, end_idx, annot in shaded_regions:
+        
+        annotation = annot.split('_')[-1]
+       
+        for ax in axs:
+            if annotation in elements:
+                ax.axvspan(start_idx, end_idx, color='lightgrey', alpha=0.75, linewidth=2, edgecolor='black', linestyle='dotted')
+        for ax in axs[:3]:
+            print (start_idx, end_idx, annotation)
+            if annotation == 'REP6' or annotation == 'REP7' or annotation == 'dsREP':
+                ax.annotate(annotation, xy=(start_idx, 1), 
+                xycoords=('data', 'axes fraction'), 
+                fontsize=10, color='black', 
+                verticalalignment='top', 
+                xytext=(0, -10), textcoords='offset points')
+
+
+    # Z-score plot
+    axs[0].scatter(x_series, this_reg_df['zscore'],
+                   c=threshold_series, cmap=color_map, s=(threshold_series + 2) * 10)
+    axs[0].axhline(0, linestyle='dashed', color='grey')
+    axs[0].axhline(z_threshold, linestyle='dotted', color='grey')
+    axs[0].axhline(-z_threshold, linestyle='dotted', color='grey')
+    axs[0].set_ylabel("Z-score", fontsize=10)
+    axs[0].set_ylim(-4, 4)
+    axs[0].spines['top'].set_visible(False)
+    axs[0].spines['right'].set_visible(False)
+
+
+
+    # CN plot
+    axs[1].scatter(x_series, this_reg_df['copynumber'],
+                   c=threshold_series, cmap=color_map, s=(threshold_series + 2) * 10)
+    axs[1].axhline(2, linestyle='dashed', color='grey')
+    axs[1].axhline(2 + cn_threshold, linestyle='dotted', color='grey')
+    axs[1].axhline(2 - cn_threshold, linestyle='dotted', color='grey')
+    axs[1].set_ylim(0, max(4, np.ceil(this_reg_df['copynumber'].max())))
+    axs[1].set_ylabel("Copy Number", fontsize=10)
+    axs[1].set_ylim(0, 4)
+    axs[1].spines['top'].set_visible(False)
+    axs[1].spines['right'].set_visible(False)
+    #axs[1].grid(True)
+
+    # Depth plot
+    axs[2].errorbar(x_series, this_reg_df['expDepth'],yerr=np.abs((this_reg_df['Depth'] / this_reg_df['prop']) * this_reg_df['std']),fmt='o', color='grey', label='Expected Depth', markersize=1,alpha=0.8)
+  
+
+    axs[2].scatter(x_series, this_reg_df['Depth'],
+                   c=threshold_series, cmap=color_map, s=(threshold_series + 2) * 10)
+    axs[2].axhline(20, linestyle='dashed', color='grey')
+    axs[2].set_ylabel("Read Depth", fontsize=10)
+    axs[2].spines['top'].set_visible(False)
+    axs[2].spines['right'].set_visible(False)
+    #axs[2].grid(True)
+
+    # Add gene boundaries
+    for start_idx, end_idx, gene in gene_limits:
+        #print (start_idx, end_idx, gene)
+        gene_names = gene.split('/')[0]
+        pattern = r'^(CYP2D6|CYP2D7|CYP2D8P)$'
+        if re.search(pattern, gene_names):
+            label_names = gene_names
+        else:
+            label_names = ""
+        for ax in axs:
+            ax.axvline(start_idx, linestyle='solid', color='black')
+            ax.axvline(end_idx, linestyle='solid', color='black')
+        for ax in axs[:3]:
+            ax.annotate(label_names, (start_idx, ax.get_ylim()[1]), fontsize=12, color='black')
+
+    # Annotations
+    axs[0].annotate(f"red markers = cn 2±{cn_threshold}, z-score ±{z_threshold}",
+                    xy=(0, 1.15),  # 15% above the top
+                    xycoords='axes fraction',
+                    fontsize=12, ha='left', va='bottom')
+    #                (0, axs[0].get_ylim()[1]*2), fontsize=15)                    
+    axs[1].annotate("shaded areas = exons & REP-regions",
+                    xy=(0, 1.15),  # 15% above the top
+                    xycoords='axes fraction',
+                    fontsize=12, ha='left', va='bottom')
+    axs[2].annotate("grey markers = expected read depth",
+                    xy=(0, 1.15),  # 15% above the top
+                    xycoords='axes fraction',
+                    fontsize=12, ha='left', va='bottom')
+
+    # X-ticks as genomic positions
+    tick_indices = np.linspace(0, len(this_reg_df) - 1, 10, dtype=int)
+    tick_labels = [f"{chr_name}:{this_reg_df.iloc[idx]['Position']}" for idx in tick_indices]
+
+    for ax in axs:
+        ax.set_xticks(tick_indices)
+        ax.set_xticklabels(tick_labels, rotation=0, fontsize=8)
+
+    #axs[2].set_xticks(tick_indices)
+    #axs[2].set_xticklabels(tick_labels, rotation=0, fontsize=8)
+    axs[2].set_xlabel("Position")
+
+    # Final plot
+    fig.suptitle(f"{sample_name} {chr_name}:{start_pos}-{end_pos}", fontsize=16)
+    #fig.tight_layout(rect=[0, 0.03, 1, 0.95])
+    fig.tight_layout(rect=[0, 0.01, 1, 0.95], h_pad=3)
+
+    # Save plot
+    output_path = os.path.join(output_dir, f"{sample_name}_{chr_name}_{start_pos}_{end_pos}.png")
+    fig.savefig(output_path, dpi=300)
+
+
+    plt.close(fig)
 
 def main():
     """
@@ -782,7 +1098,7 @@ def main():
         print(f"\nCreating report directory: {report_dir}")
         os.makedirs(report_dir)
     else:
-        print(f"\nUsing existing report directory: {report_dir}")
+        print(f"\nUsing existing report§ directory: {report_dir}")
 
     log_file = os.path.join(report_dir, f"{args.input_sample_name}_CYP2D6_report_log.txt")
     print(f"\nCreating log file: {log_file}")
@@ -811,13 +1127,16 @@ def main():
     logging.info("\nCreating CYP2D6 report...")
     cyp2d6_regions = cyp2d6_report(df_cnv, df_gene_limits, args.input_sample_name, args.input_z_threshold, args.input_cn_threshold, args.input_prop_threshold, args.input_bed, args.input_flag_bed, report_dir)
 
+
     # Create CYP2D6 region plot
     logging.info("\nCreating CYP2D6 region plot...")
-    plot_region(df_cnv, df_gene_limits, args.input_sample_name, args.input_z_threshold, args.input_cn_threshold, "22", 42123143, 42155250, args.input_bed, report_dir)
+    #plot_region(df_cnv, df_gene_limits, args.input_sample_name, args.input_z_threshold, args.input_cn_threshold, "22", 42123143, 42155250, args.input_bed, report_dir)
+
+    plot_region_with_layers(df_cnv, df_gene_limits, args.input_sample_name, args.input_z_threshold, args.input_cn_threshold, "22", 42123143, 42155250, args.input_bed, report_dir)
 
     # Plot all genes
     logging.info("\nPlotting all genes...")
-    plot_all_genes(df_cnv, df_gene_limits, args.input_sample_name, args.input_z_threshold, args.input_cn_threshold, args.input_bed, report_dir)
+    #plot_all_genes(df_cnv, df_gene_limits, args.input_sample_name, args.input_z_threshold, args.input_cn_threshold, args.input_bed, report_dir)
 
     # Final log statements
     logging.info("Analysis complete.")
