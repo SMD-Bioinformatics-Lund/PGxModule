@@ -36,6 +36,10 @@ workflow PGX_SHORT {
         PHARMCAT ( HAPLOTYPING.out.filtered_haplotypes ).set { ch_pharmcat }
         ch_versions = ch_versions.mix(ch_pharmcat.versions)
 
+        // CNV Calling in CYP2D6 and other regions
+        CNVCALLIG ( bam_input )
+        ch_versions = ch_versions.mix()
+
         // ONTARGET
         ONTARGET ( 
             bam_input, 
@@ -59,6 +63,7 @@ workflow PGX_SHORT {
             ontarget_bams, // CAN be ontarget or all, modify this to supprt both
         ).set { ch_coverage }
 
+
         // CLINICAL_INFORMATION
         CLINICAL_INFORMATION ( ch_annotation.detected_variants )
 
@@ -72,6 +77,9 @@ workflow PGX_SHORT {
             CLINICAL_INFORMATION.out.interactions
         ).set { ch_report }
         ch_versions = ch_versions.mix(ch_report.versions)
+
+
+    
 
         // MODULE: Software Versions
         CUSTOM_DUMPSOFTWAREVERSIONS (
