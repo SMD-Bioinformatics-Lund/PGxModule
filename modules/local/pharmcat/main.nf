@@ -43,7 +43,8 @@ process PHARMCAT_PREPROCESSING {
 
 
 process PHARMCAT_RUN {
-    label 'process_medium'
+    label 'process_very_few_cpus'
+    label 'process_medium_memory'
     label 'stage'
     tag "$meta.group"
 
@@ -54,7 +55,8 @@ process PHARMCAT_RUN {
         tuple val(group), val(meta), file("*.phenotype.json"),  emit: pharmcat_pheno_json
         tuple val(group), val(meta), file("*.match.json"),      emit: pharmcat_match_json
         tuple val(group), val(meta), file("*.report.html"),     emit: pharmcat_report,              optional: true
-        tuple val(group), val(meta), file("*.report.json"),     emit: pharmcat_report_json,         optional: true  
+        tuple val(group), val(meta), file("*.report.json"),     emit: pharmcat_report_json,         optional: true
+        tuple val(group), val(meta), file("*.tsv"),             emit: pharmcat_calls_tsv,           optional: true  
         path "versions.yml",                                    emit: versions
 
     when:

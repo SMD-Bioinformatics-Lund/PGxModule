@@ -69,9 +69,9 @@ workflow PGX_PANEL {
         ch_versions = ch_versions.mix(PHARMCAT.out.versions)
 
         // CNV calling CYP2D6
-        CYP2D6_CNVCALL ( COVERAGE.out.panel_depth )
+        CYP2D6_CNVCALL ( COVERAGE.out.cnv_depth )
         ch_versions = ch_versions.mix(CYP2D6_CNVCALL.out.versions)
-        
+
     
         // Multiqc
 
