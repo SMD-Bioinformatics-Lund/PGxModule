@@ -1,3 +1,6 @@
+# 2.0.3
+   - Updated sentieon certificates
+
 # 2.0.2
    - Fixed Zero divison error when there is no allele depth in the variant calls (#43)
 # 2.0.1
