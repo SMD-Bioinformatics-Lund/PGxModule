@@ -1,5 +1,6 @@
 # 2.0.3
    - Updated sentieon certificates
+   - haplotyping process now gives unzipped version of vcf files
 
 # 2.0.2
    - Fixed Zero divison error when there is no allele depth in the variant calls (#43)

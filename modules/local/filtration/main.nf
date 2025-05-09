@@ -4,7 +4,7 @@ process VARIANT_FILTRATION {
     tag "$meta.group"
 
     input:
-        tuple val(group), val(meta), file(vcf), file(tbi)
+        tuple val(group), val(meta), file(vcf)
 
     output:
         tuple val(group), val(meta), file("*.filtered.haplotypes.vcf.gz"), file("*.filtered.haplotypes.vcf.gz.tbi"),    emit: haplotypes_filtered
@@ -17,9 +17,8 @@ process VARIANT_FILTRATION {
         def args    = task.ext.args   ?: ''
         def prefix  = task.ext.prefix ?: "${meta.group}"
         """
-        gunzip -c $vcf > ${prefix}.haplotypes.vcf
         variant_filtration.py \
-            --input_vcf=${prefix}.haplotypes.vcf \
+            --input_vcf=${vcf} \
             $args \
             --output_file=${prefix}.filtered.haplotypes.vcf
         
