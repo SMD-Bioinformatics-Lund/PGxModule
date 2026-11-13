@@ -3,11 +3,9 @@
 - Publish report JSON and target-depth TSV alongside HTML; expose the JSON workflow output.
 - Preserve existing Swedish report sections and patient placeholders; render recommendation bold text and line breaks through sanitized Markdown.
 - Record Python and smd-reports versions in report production and stub tasks.
-- Add a WSL local-executor configuration using Singularity and local .design dummy inputs.
-- Update the report image recipe and documentation, and correct relative module-config includes.
 
 # v2.1.0
-- Updated Pharmcat Version to v3.2.0, which fixes a DYPD allele matcher bug 
+- Updated Pharmcat Version to v3.2.0, which fixes a DYPD allele matcher bug
 
 # v2.0.4
 - Corrected TMPT --> TPMT in the report header table
@@ -36,7 +34,7 @@
 # v1.0.2
    - Updated DPYD HapB3 haplotype related rsids (rs75017182 and rs56038477)
    - Main target bed regions are padded with 20bp up and down stream
-  
+
 # v1.0.1
    - The report will now include a telephone number for medical information support related to its contents.
 
