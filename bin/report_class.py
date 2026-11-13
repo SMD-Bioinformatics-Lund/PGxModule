@@ -439,14 +439,14 @@ class Report(UtilityFunctions):
                   ("Provtyp", "<SAMPLE_TYPE>"),
                   ("Frågeställning", "PGx (DPYD, TPMT, NUDT15)"),
                   ("Analysmetod", "NGS med PGx"),
-                  ("Analys genomförd av", "Centrum för molekylär diagnostik (CMD) och Klinisk genetik och patologi")]
+                  ("Analys genomförd av", "Sektion för molekylär diagnostik (SMD) och Klinisk genetik och patologi")]
         payload = {
             "application": "pgx", "language": "sv",
             "title": f"PGx-analysrapport (NGS) - {self.group}",
             "report": {"report_id": self.group, "sample_id": self.group, "generated_at": datetime.now().astimezone().isoformat(),
                        "fields": [{"label": label, "value": value} for label, value in fields]},
-            "branding": {"organization": "Region Skåne", "department": "Centrum för molekylär diagnostik (CMD)",
-                         "address": "Sölvegatan 23B, Lund", "center_logo": "data:image/png;base64," + self.logo_base64,
+            "branding": {"organization": "Sektion för molekylär diagnostik (SMD)",
+                         "address": "Sölvegatan 23B, Lund, Region Skåne", "center_logo": "data:image/png;base64," + self.logo_base64,
                          "accredited": False},
             "provenance": {"application_name": "PGxModule"},
             "sections": sections,
