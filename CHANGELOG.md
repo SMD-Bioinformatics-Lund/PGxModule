@@ -1,3 +1,11 @@
+# v2.2.0
+- Replace local report templates with pip-installed smd-reports 0.5.3 and the PGx preset.
+- Publish report JSON and target-depth TSV alongside HTML; expose the JSON workflow output.
+- Preserve existing Swedish report sections and patient placeholders; render recommendation bold text and line breaks through sanitized Markdown.
+- Record Python and smd-reports versions in report production and stub tasks.
+- Add a WSL local-executor configuration using Singularity and local .design dummy inputs.
+- Update the report image recipe and documentation, and correct relative module-config includes.
+
 # v2.1.0
 - Updated Pharmcat Version to v3.2.0, which fixes a DYPD allele matcher bug 
 

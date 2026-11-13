@@ -22,6 +22,7 @@ envs/*sif
 venv/
 envs/requirements.txt
 *sif
+.design
 
 
 #python chace

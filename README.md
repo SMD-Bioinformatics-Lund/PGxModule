@@ -85,7 +85,7 @@ After installing Singularity, make sure it is added to your system's PATH to ena
 
 ### Configuring the Workflow
 
-To set up the workflow, configure the paths in `configs/nextflow.config`. If using Singularity with Nextflow, run the script `envs/get_containers.sh`.
+To set up the workflow, configure the paths in `configs/nextflow.config`. If using Singularity with Nextflow, run the script `envs/get_cointainers.sh`.
 
 ## Run Sentieon
 
@@ -119,3 +119,71 @@ nextflow run main.nf --csv /path/to/csv/input.csv -profile "panel,hg38,solid" --
 
 <img src="resources/workflow_images/PGXModule_Workflow_v2.0.0.png" alt="Workflow Image" width="50%">
 
+
+## PGx report renderer
+
+Reports use the pip distribution `smd-reports` (Python import `smd_reports`) and its
+built-in PGx preset. The report process publishes `<sample>.pgx.html`,
+`<sample>.pgx.json`, and `<sample>.targets.depth.tsv`. The JSON contains embedded
+branding artwork and can be validated or rendered independently:
+
+```bash
+smd-reports validate sample.pgx.json
+smd-reports render sample.pgx.json --format html --output sample.html
+```
+
+The report remains Swedish, with patient placeholders for later replacement.
+Variant calculations, depth thresholds and recommendations are computed by
+PGxModule; layout and HTML rendering are supplied by `smd_reports`.
+The JSON retains the existing report sections in order: clinical recommendations
+and contact information, clinically relevant variants, low-depth targets,
+analysis description, included genes, included haplotypes, and references.
+Patient and sample information is supplied through report metadata. Empty-result
+messages and the depth QC-pass message are supplied in JSON.
+The package's default PGx styling is used without custom CSS.
+PDF generation is not enabled.
+
+Prepare a Singularity image using `envs/recepies/smd_reports`, or include the
+following in your own image (Python 3.10+, preferably 3.11):
+
+```bash
+python -m pip install smd-reports==0.5.3 pandas==2.1.3 numpy==1.26.2
+```
+
+Pip resolves the reporting package's dependencies. WeasyPrint and native PDF
+libraries are unnecessary. Bash and standard Unix utilities must be available.
+The report process container is configured in
+`configs/modules/pharmacogenomics.config` as
+`${params.container_dir}/smd_reports_0.5.3.sif`.
+The old `--report_template` report-script argument has been removed;
+`create_report.py` now requires `--output_json` alongside `--output`.
+
+## WSL stub runs with Singularity
+
+Run from the repository root inside WSL, with Java, Nextflow and Singularity
+installed. Use the existing dummy inputs in `.design/` and supply your container directory:
+
+```bash
+nextflow -log .design/nextflow.log \
+  -c configs/nextflow.config -c configs/nextflow_wsl_stub.config \
+  run main.nf -stub-run \
+  --container_dir /absolute/path/containers
+```
+
+The WSL configuration uses the local executor, enables Singularity, and uses
+the existing tool-specific images for analysis stubs and the new report image.
+Existing stubs still query tool versions, so their images must contain those tools.
+PharmCAT is disabled in this stub configuration. Each process uses one CPU and
+1 GB of memory. Keep the repository and image on the WSL Linux filesystem when
+possible; paths supplied to Nextflow must be Linux paths.
+
+`.design/` is Git-ignored and contains the local samplesheet and dummy
+BAM/index, reference and annotation files. These inputs are for `-stub-run` only
+and are not valid sequencing inputs. Stub reports are placeholders: the JSON
+contains `{"stub": true}` and is not a report-schema document.
+
+Work files, execution reports, completion logs and results remain under `.design/`.
+Published outputs are grouped by process under `.design/results/pgx_stub/`, with
+PGx report placeholders in `GET_PGX_REPORT/`. The WSL configuration overrides
+cluster executors, bind paths and publication paths; load it after the
+main configuration and do not combine it with production profiles.

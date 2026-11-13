@@ -85,7 +85,7 @@ process GET_INTERACTION_GUIDELINES {
 }
 
 process GET_PGX_REPORT {
-    // Generates markdown report per sample
+    // Generates HTML and JSON reports per sample
     label 'process_single'
     label 'stage'
     tag "$meta.group"
@@ -95,6 +95,7 @@ process GET_PGX_REPORT {
 
     output:
         tuple val(group), val(meta), file("*.pgx.html"),            emit: pgx_html
+        tuple val(group), val(meta), file("*.pgx.json"),            emit: pgx_json
         tuple val(group), val(meta), file("*.targets.depth.tsv"),   emit: targets_depth
         path "versions.yml",                                        emit: versions
 
@@ -114,10 +115,12 @@ process GET_PGX_REPORT {
             --padded_baits_depth $depth_at_padded_baits \
             --annotated_vcf $annotated_vcf \
             --output ${prefix}.pgx.html \
+            --output_json ${prefix}.pgx.json \
             $args
 
         cat <<-END_VERSIONS > versions.yml
         "${task.process}":
+            smd_reports: \$(python3 -c 'import smd_reports; print(smd_reports.__version__)')
             python: \$(python3 --version 2>&1 | sed -e 's/Python //g')
         END_VERSIONS
         """
@@ -126,10 +129,12 @@ process GET_PGX_REPORT {
         def prefix  = task.ext.prefix ?: "${meta.group}"
         """
         touch ${prefix}.pgx.html
+        echo '{"stub": true}' > ${prefix}.pgx.json
         touch ${prefix}.targets.depth.tsv
 
         cat <<-END_VERSIONS > versions.yml
         "${task.process}":
+            smd_reports: \$(python3 -c 'import smd_reports; print(smd_reports.__version__)')
             python: \$(python3 --version 2>&1 | sed -e 's/Python //g')
         END_VERSIONS
         """
