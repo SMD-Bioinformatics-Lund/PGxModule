@@ -396,7 +396,11 @@ class Report(UtilityFunctions):
             "pgx-recommendations",
             "Slutsats - Kliniska rekommendationer baserad på genotyper",
             ["Gen", "Haplotyp", "Klinisk rekommendation"], report_guidelines,
-            column_options={"2": {"format": "markdown"}},
+            column_options={
+                "0": {"width": 12},
+                "1": {"width": 22},
+                "2": {"width": 66, "format": "markdown"},
+            },
             empty_text="Inga detekterade varianter/rekommendationer")]
         sections.extend([
             dict(kind="text", key="contact", text=(
@@ -417,16 +421,18 @@ class Report(UtilityFunctions):
                 "(Farmakogenetik (PGx), Twist custom panel). Den aktuella analysen täcker de "
                 "genetiska varianter som nämns i tabell 1. I tabell 2 finns alla de genetiska "
                 "varianter som ingår i PGx panelen. Framtida kunskap kan komma att modifiera aktuell tolkning.")),
-            table("pgx-genes", "Tabell 1: Gener som ingår i PGx-analysen", ["Gen"],
-                  [[gene] for gene in (gene_list or [])]),
-            table("pgx-targets", "Tabell 2: Haplotyper som ingår i PGx-analysen",
-                  ["rsID", "Haplotyp"], [[key, value] for key, value in (targets or {}).items()]),
+            dict(kind="compact_table", key="pgx-genes",
+                 heading="Tabell 1: Gener som ingår i PGx-analysen",
+                 items=gene_list or [], columns=min(10, len(gene_list or []) or 1)),
+            dict(kind="compact_table", key="pgx-targets",
+                 heading="Tabell 2: Haplotyper som ingår i PGx-analysen",
+                 items=[f"{value}({key})" for key, value in (targets or {}).items()], columns=5),
             dict(kind="references", key="references", heading="Referenser", text=(
                 "[1] Standards and guidelines for the interpretation and reporting of sequence "
                 "variants in cancer. Li et al, Journal of Molecular Diagnostics, 2017.")),
         ])
         sections = [section for section in sections
-                    if not (section["key"] in {"pgx-genes", "pgx-targets"} and not section["rows"])]
+                    if not (section["key"] in {"pgx-genes", "pgx-targets"} and not section["items"])]
         fields = [("Patientnamn", "<PATIENT_NAME>"),
                   ("Personnummer", "<PERSONAL_IDENTITY_NUMBER>"),
                   ("Registreringsdatum", "<REGISTRATION_DATE>"),
