@@ -106,6 +106,7 @@ process GET_PGX_REPORT {
         def args    = task.ext.args   ?: ''
         def prefix  = task.ext.prefix ?: "${meta.group}"
         """
+        export PYTHONNOUSERSITE=1
         create_report.py \
             --group $group \
             --detected_variants $detected_variants \
@@ -128,6 +129,7 @@ process GET_PGX_REPORT {
     stub:
         def prefix  = task.ext.prefix ?: "${meta.group}"
         """
+        export PYTHONNOUSERSITE=1
         touch ${prefix}.pgx.html
         echo '{"stub": true}' > ${prefix}.pgx.json
         touch ${prefix}.targets.depth.tsv
