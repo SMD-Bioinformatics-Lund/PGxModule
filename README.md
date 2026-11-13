@@ -55,7 +55,9 @@ This step involves extracting the on-target BAM files from the analyzed samples.
 11. **Coverage Analysis**  
 Coverage Analysis evaluates the sequencing depth across targeted regions, providing insights into the reliability of variant calls. By assessing coverage, this step identifies regions with insufficient data and informs the overall confidence in the accuracy of the genomic information obtained from the samples.
 12. **Report**  
-The Report step consolidates the findings from the preceding analyses into a comprehensive report. This report includes detailed information on detected variants, clinical guidelines, interaction assessments, and other relevant pharmacogenomic insights. It serves as a valuable resource for clinicians and researchers, aiding in informed decision-making based on the genomic characteristics of the analyzed samples.
+The Report step uses the pip package `smd-reports==0.5.3` and its PGx preset to generate `<sample>.pgx.html` and `<sample>.pgx.json`, alongside `<sample>.targets.depth.tsv`. Reports retain the existing Swedish sections: patient and sample information, clinical recommendations and contact information, clinically relevant variants, low-depth targets, analysis description, included genes and haplotypes, and references. Patient placeholders are preserved, and recommendation bold text and line breaks use sanitized Markdown rendering. The package supplies the default styling without custom CSS.
+
+The report image requires Python 3.10+ with `smd-reports==0.5.3`, `pandas==2.1.3`, and `numpy==1.26.2`. Its path is configured for `GET_PGX_REPORT` in `configs/modules/pharmacogenomics.config` as `${params.container_dir}/smd-reports_0.5.3.sif`. The image recipe is `envs/recepies/smd_reports`. Reports are generated as HTML and JSON; PDF dependencies are not required.
 
 ## Example Input CSV
 

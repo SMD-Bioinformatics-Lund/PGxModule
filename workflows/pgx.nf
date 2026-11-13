@@ -61,6 +61,7 @@ workflow PGX {
 
 
     emit:
+        report_json             = PHARMACO_GENOMICS.out.pgx_report_json
         report                  = PHARMACO_GENOMICS.out.pgx_report              // channel: [ val(group), val(meta), file(pgx-report) ]
         // pharmcat_pgx_regions    = PHARMACO_GENOMICS.out.pharmcat_pgx_regions    // channel: [ tuple val(group), val(meta) file("pharmcat_preprocessed.vcf") ]
         pharmcat_preprocessed   = PHARMACO_GENOMICS.out.pharmcat_preprocessed   // channel: [ tuple val(group), val(meta) file("pharmcat_preprocessed.vcf") ]

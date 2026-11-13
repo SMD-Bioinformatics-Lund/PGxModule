@@ -1,0 +1,8 @@
+Bootstrap: docker
+From: python:3.11-slim
+
+%post
+    python -m pip install --no-cache-dir smd-reports==0.5.3 pandas==2.1.3 numpy==1.26.2
+
+%test
+    python -c 'import smd_reports, pandas, numpy; print(smd_reports.__version__)'

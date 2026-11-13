@@ -1,9 +1,10 @@
-import os
 import pandas as pd
 import numpy as np
 from datetime import datetime
-import jinja2
-from weasyprint import HTML
+import json
+import re
+from pathlib import Path
+from smd_reports import ReportLoader, ReportRenderer
 import base64
 
 
@@ -82,7 +83,7 @@ class Report(UtilityFunctions):
             "annotated_vcf",
             "dbSNP_version",
             "output",
-            "report_template",
+            "output_json",
             "genome_version",
             "logo",
         ]
@@ -371,6 +372,9 @@ class Report(UtilityFunctions):
         report_guidelines = self.format_guidelines_for_report(
             guidelines_present, self.possible_interactions_df
         )
+        # The renderer sanitizes Markdown HTML and accepts strong rather than b.
+        for guideline in report_guidelines:
+            guideline[2] = re.sub(r"<(\/?)b>", r"<\1strong>", guideline[2], flags=re.IGNORECASE)
 
         # get low depth targets
         low_depth_targets = self.get_low_depth_targets(
@@ -380,36 +384,76 @@ class Report(UtilityFunctions):
         # Get list of genes
         gene_list = self.get_genes()
 
-        # Render the Jinja2 template
-        template_loader = jinja2.FileSystemLoader(
-            searchpath=os.path.dirname(self.report_template)
-        )
-        template_env = jinja2.Environment(loader=template_loader)
-        template_env.filters["set"] = set
-        template_env.filters["list"] = list
-        template = template_env.get_template(os.path.basename(self.report_template))
+        def rows(frame):
+            # pandas JSON conversion normalizes numpy scalars and missing values.
+            return [] if frame is None else json.loads(frame.to_json(orient="values"))
 
-        # Render the template with the data
-        rendered_content = template.render(
-            group=self.group,
-            clincial_variants=self.df_to_dict(clincial_variants),
-            guidelines_present=self.df_to_dict(guidelines_present),
-            report_guidelines=report_guidelines,
-            low_depth_targets=self.df_to_dict(low_depth_targets),
-            targets=targets,
-            read_depth=self.read_depth,
-            date=datetime.now().strftime("%Y-%m-%d"),
-            dbSNP_version=self.dbSNP_version,
-            genome_version=self.genome_version,
-            gene_list=gene_list,
-            logo_base64=self.logo_base64,
-        )
+        def table(key, heading, columns, values, **options):
+            return dict(kind="table", key=key, heading=heading,
+                        columns={"sv": columns}, rows=values, **options)
 
-        # Save the rendered content to the output file
-        with open(self.output, "w") as output_file:
-            output_file.write(rendered_content)
-
-        # pdf_file_path = f"{self.output}.pdf"
-        # HTML(string=rendered_content).write_pdf(pdf_file_path)
-
-        print(f"Report saved to: {self.output}")
+        sections = [table(
+            "pgx-recommendations",
+            "Slutsats - Kliniska rekommendationer baserad på genotyper",
+            ["Gen", "Haplotyp", "Klinisk rekommendation"], report_guidelines,
+            column_options={
+                "0": {"width": 12},
+                "1": {"width": 22},
+                "2": {"width": 66, "format": "markdown"},
+            },
+            empty_text="Inga detekterade varianter/rekommendationer")]
+        sections.extend([
+            dict(kind="text", key="contact", text=(
+                "Vid frågor ring telefonnumret 046 - 174620 (helgfria vardagar 10:00 - 16:00) "
+                "Läkemedelsinformationscentral.")),
+            table("pgx-variants", "Kliniskt relevanta varianter upptäckta",
+                  ["Gen", "rsID", "Möjliga haplotyper", "Position", "Zygositet",
+                   "Variantfrekvens (%)", "Möjlig duplikation"], rows(clincial_variants),
+                  page_break_before=True, empty_text="Inga detekterade varianter"),
+        ])
+        sections.append(table("pgx-depth", "Mål med lågt läsdjup",
+                              ["rsID", "Haplotyp", "Position", "Läsdjup"], rows(low_depth_targets),
+                              empty_text=(f"Alla analyserade regioner har ett läsdjup på ≥ "
+                                          f"{self.read_depth}x (PGX_QC_PASS)")))
+        sections.extend([
+            dict(kind="description", key="description", heading="Analysbeskrivning", text=(
+                "Paired-end sekvensering (Illumina) av en nationellt framtagen genpanel "
+                "(Farmakogenetik (PGx), Twist custom panel). Den aktuella analysen täcker de "
+                "genetiska varianter som nämns i tabell 1. I tabell 2 finns alla de genetiska "
+                "varianter som ingår i PGx panelen. Framtida kunskap kan komma att modifiera aktuell tolkning.")),
+            dict(kind="compact_table", key="pgx-genes",
+                 heading="Tabell 1: Gener som ingår i PGx-analysen",
+                 items=gene_list or [], columns=min(10, len(gene_list or []) or 1)),
+            dict(kind="compact_table", key="pgx-targets",
+                 heading="Tabell 2: Haplotyper som ingår i PGx-analysen",
+                 items=[f"{value}({key})" for key, value in (targets or {}).items()], columns=5),
+            dict(kind="references", key="references", heading="Referenser", text=(
+                "[1] Standards and guidelines for the interpretation and reporting of sequence "
+                "variants in cancer. Li et al, Journal of Molecular Diagnostics, 2017.")),
+        ])
+        sections = [section for section in sections
+                    if not (section["key"] in {"pgx-genes", "pgx-targets"} and not section["items"])]
+        fields = [("Patientnamn", "<PATIENT_NAME>"),
+                  ("Personnummer", "<PERSONAL_IDENTITY_NUMBER>"),
+                  ("Registreringsdatum", "<REGISTRATION_DATE>"),
+                  ("Provtyp", "<SAMPLE_TYPE>"),
+                  ("Frågeställning", "PGx (DPYD, TPMT, NUDT15)"),
+                  ("Analysmetod", "NGS med PGx"),
+                  ("Analys genomförd av", "Sektion för molekylär diagnostik (SMD) och Klinisk genetik och patologi")]
+        payload = {
+            "application": "pgx", "language": "sv",
+            "title": f"PGx-analysrapport (NGS) - {self.group}",
+            "report": {"report_id": self.group, "sample_id": self.group, "generated_at": datetime.now().astimezone().isoformat(),
+                       "fields": [{"label": label, "value": value} for label, value in fields]},
+            "branding": {"organization": "Sektion för molekylär diagnostik (SMD)",
+                         "address": "Sölvegatan 23B, Lund, Region Skåne", "center_logo": "data:image/png;base64," + self.logo_base64,
+                         "accredited": False},
+            "provenance": {"application_name": "PGxModule"},
+            "sections": sections,
+        }
+        source = json.dumps(payload, ensure_ascii=False, allow_nan=False, indent=2)
+        report = ReportLoader().loads(source)
+        html = ReportRenderer().render_html(report)
+        Path(self.output_json).write_text(source + "\n", encoding="utf-8")
+        Path(self.output).write_text(html, encoding="utf-8")
+        print(f"Report saved to: {self.output} and {self.output_json}")
