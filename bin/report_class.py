@@ -392,9 +392,10 @@ class Report(UtilityFunctions):
             return dict(kind="table", key=key, heading=heading,
                         columns={"sv": columns}, rows=values, **options)
 
+        clinical_question = "PGx (DPYD, TPMT, NUDT15)"
         sections = [table(
             "pgx-recommendations",
-            "Slutsats - Kliniska rekommendationer baserad på genotyper",
+            f"Slutsats - Kliniska rekommendationer baserad på genotyper - frågeställning {clinical_question}",
             ["Gen", "Haplotyp", "Klinisk rekommendation"], report_guidelines,
             column_options={
                 "0": {"width": 12},
@@ -406,7 +407,7 @@ class Report(UtilityFunctions):
             dict(kind="text", key="contact", text=(
                 "Vid frågor ring telefonnumret 046 - 174620 (helgfria vardagar 10:00 - 16:00) "
                 "Läkemedelsinformationscentral.")),
-            table("pgx-variants", "Kliniskt relevanta varianter upptäckta",
+            table("pgx-variants", "Kliniskt relevanta mutationer (SNVs och små INDELs)",
                   ["Gen", "rsID", "Möjliga haplotyper", "Position", "Zygositet",
                    "Variantfrekvens (%)", "Möjlig duplikation"], rows(clincial_variants),
                   page_break_before=True, empty_text="Inga detekterade varianter"),
@@ -437,12 +438,12 @@ class Report(UtilityFunctions):
                   ("Personnummer", "<PERSONAL_IDENTITY_NUMBER>"),
                   ("Registreringsdatum", "<REGISTRATION_DATE>"),
                   ("Provtyp", "<SAMPLE_TYPE>"),
-                  ("Frågeställning", "PGx (DPYD, TPMT, NUDT15)"),
+                  ("Frågeställning", clinical_question),
                   ("Analysmetod", "NGS med PGx"),
                   ("Analys genomförd av", "Sektion för molekylär diagnostik (SMD) och Klinisk genetik och patologi")]
         payload = {
             "application": "pgx", "language": "sv",
-            "title": f"PGx-analysrapport (NGS) - {self.group}",
+            "title": f"PGx-analysrapport (NGS) - frågeställning {clinical_question}",
             "report": {"report_id": self.group, "sample_id": self.group, "generated_at": datetime.now().astimezone().isoformat(),
                        "fields": [{"label": label, "value": value} for label, value in fields]},
             "branding": {"organization": "Sektion för molekylär diagnostik (SMD)",

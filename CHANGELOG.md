@@ -1,5 +1,5 @@
 # v2.2.0
-- Replace local report templates with pip-installed smd-reports 0.5.3 and the PGx preset.
+- Replace local report templates with pip-installed smd-reports 0.6.0 and the PGx preset.
 - Publish report JSON and target-depth TSV alongside HTML; expose the JSON workflow output.
 - Preserve existing Swedish report sections and patient placeholders; render recommendation bold text and line breaks through sanitized Markdown.
 - Record Python and smd-reports versions in report production and stub tasks.
