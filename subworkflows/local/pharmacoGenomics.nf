@@ -119,6 +119,7 @@ workflow PHARMACO_GENOMICS {
 
 
     emit:
+        pgx_report_json         = GET_PGX_REPORT.out.pgx_json
         pgx_report              = GET_PGX_REPORT.out.pgx_html                           // channel: [ tuple val(group), val(meta) file("pgx.html") ]
         // pharmcat_pgx_regions    = PHARMCAT_PREPROCESSING.out.pharmcat_pgx_regions    // channel: [ tuple val(group), val(meta) file("pharmcat_pgx_regions.vcf") ]
         pharmcat_preprocessed   = PHARMCAT_PREPROCESSING.out.pharmcat_preprocessed_vcf  // channel: [ tuple val(group), val(meta) file("pharmcat_preprocessed.vcf") ]
