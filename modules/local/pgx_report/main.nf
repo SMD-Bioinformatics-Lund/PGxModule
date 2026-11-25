@@ -117,6 +117,8 @@ process GET_PGX_REPORT {
             --annotated_vcf $annotated_vcf \
             --output ${prefix}.pgx.html \
             --output_json ${prefix}.pgx.json \
+            --pipeline_name "${workflow.manifest.name ?: ''}" \
+            --pipeline_version "${workflow.manifest.version ?: ''}" \
             $args
 
         cat <<-END_VERSIONS > versions.yml

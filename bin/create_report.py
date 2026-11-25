@@ -22,6 +22,8 @@ parser.add_argument(
     help="Read depth threshold for target regions (default: 100)",
 )
 parser.add_argument("--output_json", required=True, help="Output report JSON path")
+parser.add_argument("--pipeline_name", default="", help="Pipeline name for report provenance")
+parser.add_argument("--pipeline_version", default="", help="Pipeline version for report provenance")
 parser.add_argument(
     "--detected_variants",
     type=str,
@@ -109,6 +111,8 @@ if __name__ == "__main__":
         genome_version=args.genome_version,
         output=args.output,
         output_json=args.output_json,
+        pipeline_name=args.pipeline_name,
+        pipeline_version=args.pipeline_version,
         logo=args.logo,
     )
 

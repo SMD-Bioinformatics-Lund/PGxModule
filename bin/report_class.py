@@ -4,6 +4,7 @@ from datetime import datetime
 import json
 import re
 from pathlib import Path
+from jinja2 import ChoiceLoader, DictLoader
 from smd_reports import ReportLoader, ReportRenderer
 import base64
 
@@ -449,12 +450,29 @@ class Report(UtilityFunctions):
             "branding": {"organization": "Sektion för molekylär diagnostik (SMD)",
                          "address": "Sölvegatan 23B, Lund, Region Skåne", "center_logo": "data:image/png;base64," + self.logo_base64,
                          "accredited": False},
-            "provenance": {"application_name": "PGxModule"},
+            "provenance": {
+                "application_name": "PGxModule",
+                "pipeline_name": getattr(self, "pipeline_name", ""),
+                "pipeline_version": getattr(self, "pipeline_version", ""),
+            },
             "sections": sections,
         }
         source = json.dumps(payload, ensure_ascii=False, allow_nan=False, indent=2)
         report = ReportLoader().loads(source)
-        html = ReportRenderer().render_html(report)
+        renderer = ReportRenderer()
+        if report.provenance.pipeline_name:
+            # smd-reports 0.7.0 uses the preset name in its stock footer.
+            footer = (
+                '<span class="template-version">{{ report.provenance.pipeline_name }}'
+                '{% set version = report.provenance.pipeline_version|trim %}'
+                '{% if version %} {% if version[0].isdigit() %}v{% endif %}{{ version }}{% endif %}'
+                ' | smd-reports v{{ report.rendering_metadata.package_version }}</span>'
+            )
+            renderer.environment.loader = ChoiceLoader([
+                DictLoader({"components/versions.html": footer}),
+                renderer.environment.loader,
+            ])
+        html = renderer.render_html(report)
         Path(self.output_json).write_text(source + "\n", encoding="utf-8")
         Path(self.output).write_text(html, encoding="utf-8")
         print(f"Report saved to: {self.output} and {self.output_json}")
